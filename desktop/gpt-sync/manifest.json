@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "ShirOS GPT Sync",
+  "version": "0.5.0",
+  "description": "Opt-in snapshots of loaded ChatGPT messages to your local ShirOS-GPT download folder.",
+  "permissions": ["downloads", "activeTab"],
+  "action": {"default_title": "ShirOS：开启/停止此页同步"},
+  "background": {"service_worker": "background.js"},
+  "content_scripts": [{"matches": ["https://chatgpt.com/*"], "js": ["content.js"]}]
+}

@@ -1,0 +1,27 @@
+name: Foundation
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.6-pg16
+        env:
+          POSTGRES_DB: shiros_test
+          POSTGRES_USER: shiros_ci
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shiros_ci -d shiros_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      SHIROS_TEST_DATABASE_URL: postgresql+psycopg://shiros_ci@127.0.0.1:55432/shiros_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --all-groups --locked --python 3.12
+      - run: uv run shiros lint
+      - run: uv run shiros typecheck
+      - run: uv run shiros test
+      - run: uv run shiros integration
+

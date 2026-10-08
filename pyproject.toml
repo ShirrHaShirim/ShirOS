@@ -1,0 +1,51 @@
+[project]
+name = "shiros"
+version = "0.5.0"
+description = "ShirOS: independent personal knowledge and memory infrastructure"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1",
+  "pydantic>=2.10,<3",
+  "pydantic-settings>=2.7,<3",
+  "sqlalchemy>=2.0,<3",
+  "psycopg[binary]>=3.2,<4",
+  "alembic>=1.14,<2",
+  "pgvector>=0.4,<1",
+  "mcp>=2.3,<3",
+  "pillow>=11,<13",
+]
+
+[dependency-groups]
+desktop = [
+    "pyinstaller>=6.22.3",
+    "pywebview>=6.2.1",
+]
+dev = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2", "httpx>=0.28,<1", "ruff>=0.9,<1", "mypy>=1.14,<2"]
+
+[project.scripts]
+shiros = "shiros.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = ["integration: requires a dedicated PostgreSQL database with pgvector"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".local"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests", "migrations", "scripts"]
+plugins = ["pydantic.mypy"]
+
