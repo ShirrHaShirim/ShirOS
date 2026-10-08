@@ -21,7 +21,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --all-groups --locked --python 3.12
       - run: uv run shiros lint
-      - run: uv run shiros typecheck
+      - run: uv run mypy --platform win32
       - run: uv run shiros test
       - run: uv run shiros integration
 
