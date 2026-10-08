@@ -4,7 +4,7 @@
 
 ## Windows 桌面版
 
-从 [v0.5.0 Releases](https://github.com/ShirrHaShirim/ShirOS/releases/tag/v0.5.0) 下载 `full`（带曲库）或 `core`（不开放音乐功能）安装包。支持 Windows 10/11 x64，需要 Microsoft WebView2。安装包包含 Python、PostgreSQL 与 pgvector；首次运行创建独立空白数据库，不含开发者或使用者的私人记忆、文件、密钥或账号配置。
+从 [v0.5.0 Releases](https://github.com/ShirrHaShirim/ShirOS/releases/tag/v0.5.0) 下载 `full`（带曲库）或 `core`（不开放音乐功能）安装包。支持 Windows 10/11 x64，需要 Microsoft WebView2。安装包包含 Python、PostgreSQL 与 pgvector。
 
 [使用说明书](docs/user-manual.md) · [音乐库](docs/music-library.md) · [第三方组件](docs/desktop-third-party.md)
 
