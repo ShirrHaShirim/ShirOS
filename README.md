@@ -30,4 +30,4 @@ Python 3.12+，`uv sync --all-groups --locked`。复制 `.env.example` 为 `.env
 
 测试：配置独立 `_test` 数据库的 `SHIROS_TEST_DATABASE_URL`，运行 `uv run pytest`。静态检查：`uv run ruff check .`、`uv run mypy`。
 
-桌面构建参见说明书。安装版不会继承任何开发环境的数据库或 MCP 授权。更新与卸载保留已产生的用户资料。发行包未作商业代码签名。
+桌面构建参见说明书。
