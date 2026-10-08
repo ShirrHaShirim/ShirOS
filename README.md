@@ -4,9 +4,15 @@
 
 ## Windows 桌面版
 
-从本仓库 Releases 下载 `full`（带曲库）或 `core`（不开放音乐功能）安装包。支持 Windows 10/11 x64，需要 Microsoft WebView2。安装包包含 Python、PostgreSQL 与 pgvector；首次运行创建独立空白数据库，不含开发者或使用者的私人记忆、文件、密钥或账号配置。
+从 [v0.5.0 Releases](https://github.com/ShirrHaShirim/ShirOS/releases/tag/v0.5.0) 下载 `full`（带曲库）或 `core`（不开放音乐功能）安装包。支持 Windows 10/11 x64，需要 Microsoft WebView2。安装包包含 Python、PostgreSQL 与 pgvector；首次运行创建独立空白数据库，不含开发者或使用者的私人记忆、文件、密钥或账号配置。
 
 [使用说明书](docs/user-manual.md) · [音乐库](docs/music-library.md) · [第三方组件](docs/desktop-third-party.md)
+
+## 交给朋友部署
+
+先安装所选版本，再将安装目录中的 [prompt.txt](prompt.txt) 拖入 Codex/Harness。提示词会让代理检查 WebView2、用独立临时目录验收空白数据库并启动桌面程序。它负责桌面部署，MCP 工具接入仍需单独配置。仓库保持私有；也可以直接向朋友提供安装包与 prompt.txt，不需要朋友获取开发者资料。
+
+安装包和发行附件均不包含任何个人记忆、聊天、用户文件、真实凭证或数据库备份。
 
 ## 功能
 
