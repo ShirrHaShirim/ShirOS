@@ -8,9 +8,9 @@
 
 [使用说明书](docs/user-manual.md) · [音乐库](docs/music-library.md) · [第三方组件](docs/desktop-third-party.md)
 
-## 交给朋友部署
+## 部署
 
-先安装所选版本，再将安装目录中的 [prompt.txt](prompt.txt) 拖入 Codex/Harness。提示词会让代理检查 WebView2、用独立临时目录验收空白数据库并启动桌面程序。它负责桌面部署，MCP 工具接入仍需单独配置。仓库保持私有；也可以直接向朋友提供安装包与 prompt.txt，不需要朋友获取开发者资料。
+先安装所选版本，再将安装目录中的 [prompt.txt](prompt.txt) 拖入 Codex/Harness。提示词会让代理检查 WebView2、用独立临时目录验收空白数据库并启动桌面程序。它负责桌面部署，MCP 工具接入仍需单独配置。
 
 安装包和发行附件均不包含任何个人记忆、聊天、用户文件、真实凭证或数据库备份。
 
