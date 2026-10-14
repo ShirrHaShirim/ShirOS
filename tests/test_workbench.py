@@ -12,7 +12,8 @@ from shiros.apps.workbench import create_workbench
 
 
 @pytest.mark.integration
-def test_browser_review_roundtrip(db_engine: Engine, tmp_path: Path) -> None:
+def test_browser_review_roundtrip(db_engine: Engine, tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("shiros.apps.workbench.MAX_MEMORY_REQUEST_BYTES", 400000)
     workflow, scope = setup(db_engine, tmp_path)
     token = "synthetic-test-capability"
     app = create_workbench(db_engine, workflow.identity, scope, token=token)

@@ -4,18 +4,39 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
-    <title>ShirOS · Personal Collection</title>
-    <link rel="icon" href="/assets/brand.svg" type="image/svg+xml" />
+    <title>ShirOS · 个人知识管理</title>
+    <link rel="icon" href="/assets/brand.png" type="image/png" />
     <link rel="stylesheet" href="/assets/app.css" />
     <link rel="stylesheet" href="/assets/design.css" />
+    <link rel="stylesheet" href="/assets/knowledge.css" />
+    <link rel="stylesheet" href="/assets/desktop-settings.css" />
+    <link rel="stylesheet" href="/assets/workspace.css" />
+    <link rel="stylesheet" href="/assets/music-workspace.css" />
+    <link rel="stylesheet" href="/assets/files-workspace.css" />
+    <link rel="stylesheet" href="/assets/knowledge-ui.css" />
+    <link rel="stylesheet" href="/assets/capture.css" />
+    <link rel="stylesheet" href="/assets/memory-workspace.css" />
+    <link rel="stylesheet" href="/assets/ui-motion.css" />
+    <script src="/assets/i18n.js"></script>
+    <script src="/assets/i18n-en.js"></script>
     <script src="/assets/theme.js"></script>
+    <script src="/assets/i18n-static.js" defer></script>
+    <script src="/assets/feedback.js" defer></script>
+    <script src="/assets/scrollbars.js" defer></script>
+    <script src="/assets/tag-manager.js" defer></script>
+    <script src="/assets/ui-motion.js" defer></script>
     <script src="/assets/app.js" defer></script>
+    <script src="/assets/music-banners.js" defer></script>
+    <script src="/assets/music-search.js" defer></script>
     <script src="/assets/music.js" defer></script>
     <script src="/assets/files.js" defer></script>
+    <script src="/assets/capture.js" defer></script>
+    <script src="/assets/knowledge.js" defer></script>
+    <script src="/assets/desktop-settings.js" defer></script>
   </head>
   <body>
     <section id="locked-screen" class="locked-screen hidden" role="alert">
-      <img src="/assets/brand.svg" alt="" />
+      <img src="/assets/brand.png" alt="" />
       <p class="eyebrow" data-i18n="localWorkspace">本机工作区</p>
       <h1 data-i18n="lockedTitle">会话未开启</h1>
       <p data-i18n="lockedCopy">请通过 shiros open 打开本机会话。</p>
@@ -24,12 +45,13 @@
     <div class="shell">
       <aside class="sidebar" aria-label="Primary navigation">
         <a class="brand" href="#memory" aria-label="Shir OS home"
-          ><img src="/assets/brand.svg" alt="" /><span
+          ><img src="/assets/brand.png" alt="" /><span
             >shir<span class="brand-light">os</span></span
           ></a
         >
         <div class="workspace-label" data-i18n="workspace">个人工作区</div>
         <nav class="nav" aria-label="Workspace">
+          <button class="nav-item" data-view="knowledge"><span class="nav-icon">◇</span><span data-i18n="navMaintenance">维护</span></button>
           <button class="nav-item" data-view="music"><span class="nav-icon">♫</span><span>音乐库</span></button>
           <button class="nav-item" data-view="files"><span class="nav-icon">▤</span><span>文件库</span></button>
           <button class="nav-item active" data-view="memory">
@@ -42,77 +64,68 @@
             ><span data-i18n="navReview">待审</span
             ><span class="nav-count" id="candidate-count">0</span>
           </button>
-          <button class="nav-item" data-view="import">
-            <span class="nav-icon">＋</span
-            ><span data-i18n="navImport">导入</span>
-          </button>
         </nav>
+        <button class="theme-button sidebar-settings" id="desktop-settings-open" type="button">⚙ 设置</button>
         <div class="sidebar-bottom">
           <span class="status-dot"></span
           ><span data-i18n="localOnly">仅本机</span
-          ><span class="principal">v0.5.0</span>
+          ><span class="principal">v0.7.18</span>
         </div>
       </aside>
 
       <main class="main-area">
         <header class="topbar">
           <div class="crumb">
-            <span>Shir OS</span><span class="crumb-sep">/</span
-            ><strong id="view-title">记忆</strong>
+            <strong id="view-title">记忆</strong><span class="queue-total" id="queue-total" aria-label="待审数量" hidden>0</span>
           </div>
           <div class="top-actions">
-            <button class="theme-button" id="theme-open" type="button" aria-label="选择颜色主题">◐ 配色</button><span class="scope-label" id="scope-label"></span
-            ><button
-              class="lang-button"
-              id="language-toggle"
-              type="button"
-              aria-label="Switch language"
-            >
-              EN</button
-            ><button
+            <span class="scope-label" id="scope-label"></span><button class="desktop-window-control" id="desktop-window-minimize" type="button" aria-label="最小化窗口" hidden><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8h10" /></svg></button><button class="desktop-window-control" id="desktop-window-maximize" type="button" aria-label="最大化或还原窗口" hidden><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="3" y="3" width="10" height="10" rx=".5" /></svg></button><button class="desktop-window-control" id="desktop-window-close" type="button" aria-label="关闭窗口" hidden><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13" /></svg></button><button
               class="mobile-nav-toggle"
               id="mobile-nav-toggle"
               type="button"
               aria-label="Open navigation"
             >
-              ☰
+              <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M8 4v12"/></svg>
             </button>
           </div>
         </header>
 
         <section class="content" aria-live="polite">
           <div class="notice hidden" id="notice" role="status"></div>
+          <section id="knowledge-view" class="view hidden">
+            <header class="knowledge-hero"><div id="knowledge-stats" class="knowledge-stats" aria-label="维护概览"></div><button id="knowledge-refresh" class="secondary-button">↻ 刷新状态</button></header><p id="knowledge-message" class="knowledge-notice" role="status"></p>
+            <div class="knowledge-workspace">
+              <div class="knowledge-main">
+                <div class="knowledge-tabs" role="tablist" aria-label="维护视图"><button id="knowledge-tab-synthesis" role="tab" aria-selected="true" aria-controls="knowledge-synthesis-panel">综述与修订</button><button id="knowledge-tab-jobs" role="tab" aria-selected="false" aria-controls="knowledge-jobs-panel" tabindex="-1">维护任务</button></div>
+                <section id="knowledge-synthesis-panel" role="tabpanel" aria-labelledby="knowledge-tab-synthesis"><div class="knowledge-section-heading"><div class="knowledge-section-title"><h2 id="knowledge-synthesis-title">综述与修订</h2><span id="knowledge-synthesis-count" class="knowledge-section-count">0</span></div></div><div id="knowledge-layers" class="knowledge-layers"></div></section>
+                <section id="knowledge-jobs-panel" role="tabpanel" aria-labelledby="knowledge-tab-jobs" hidden><div class="knowledge-section-heading"><div class="knowledge-section-title"><h2 id="knowledge-jobs-title">维护任务</h2><span id="knowledge-jobs-count" class="knowledge-section-count">0</span></div><label class="knowledge-filter">显示<select id="knowledge-job-filter" aria-label="筛选维护任务"><option value="all">全部任务</option><option value="active">进行中</option><option value="awaiting_review">待审核</option><option value="published">已发布</option><option value="cancelled">已取消</option></select></label></div><div id="knowledge-jobs" class="knowledge-jobs"></div><div id="knowledge-job-pages" class="knowledge-pagination"><button id="knowledge-jobs-prev" class="secondary-button">上一页</button><span id="knowledge-jobs-page"></span><button id="knowledge-jobs-next" class="secondary-button">下一页</button></div></section>
+              </div>
+              <aside class="knowledge-sidebar" aria-label="维护设置">
+                <section class="knowledge-control"><h2>新建维护任务</h2><p>授权客户端提交草稿，审核后发布。</p><label for="knowledge-domain">已启用领域</label><select id="knowledge-domain"></select><button id="knowledge-enqueue" class="primary-button">建立领域维护任务</button><div class="knowledge-control-divider"></div><h3>核心原则</h3><p>基于领域总结生成候选，单独审核后发布。</p><button id="knowledge-global" class="secondary-button">建立核心原则候选</button></section>
+                <details class="knowledge-control knowledge-domain-settings"><summary>领域设置<span>＋</span></summary><p>选择用于领域维护的顶层标签。</p><label for="knowledge-domain-root">顶层标签</label><select id="knowledge-domain-root"></select><label class="knowledge-checkbox"><input id="knowledge-domain-music" type="checkbox"><span>关联音乐档案<small>音乐档案只可关联一个领域</small></span></label><button id="knowledge-domain-enable" class="secondary-button">启用领域维护</button></details>
+                <p class="knowledge-sidebar-note">详细记录与音乐档案保留在原库。</p>
+              </aside>
+            </div>
+          </section>
           <section id="files-view" class="view hidden">
-            <div class="page-heading"><div><p class="eyebrow">SHIROS ARCHIVE</p><h1>文件库</h1><p class="subheading">保留原件，也保留每一次对话</p></div><div class="heading-actions"><label class="primary-button">导入文件<input id="files-upload" type="file" multiple hidden></label><label class="secondary-button">导入 GPT 对话<input id="conversation-upload" type="file" accept=".json,.zip" hidden></label></div></div>
-            <p>支持任意类型文件，单个最大 50 MB。文件不会自动成为记忆。GPT 导入支持 conversations.json 或官方导出 ZIP，保留原件、消息节点与分支。</p>
-            <div class="toolbar"><input id="files-search" class="text-input" type="search" placeholder="搜索文件名…"></div><p id="files-message" role="status"></p><div id="files-list"></div><div class="pagination"><button id="files-prev" class="secondary-button">上一页</button><span id="files-page"></span><button id="files-next" class="secondary-button">下一页</button></div>
-            <details><summary>浏览器持续同步（试验功能）</summary><p>安装随程序提供的 ShirOS GPT Sync 扩展，在 ChatGPT 对话页点击扩展按钮开启同步。扩展会将已加载消息写入浏览器下载目录的 ShirOS-GPT 文件夹；桌面端会在运行期间导入更新。不保证获取页面未加载的消息或其他分支。完整存档请使用官方数据导出。</p></details>
+            <div class="files-toolbar">
+              <label class="searchbox"><span aria-hidden="true">⌕</span><input id="files-search" type="search" maxlength="250" placeholder="搜索文件名…" aria-label="搜索文件名" /></label>
+              <div class="heading-actions"><button id="files-import" class="primary-button" type="button">＋ 导入文件</button><button id="files-conversation-import" class="secondary-button" type="button">导入 GPT 对话</button></div>
+              <input id="files-upload" type="file" multiple hidden /><input id="conversation-upload" type="file" accept=".json,.zip" hidden />
+            </div>
+            <div class="files-library-bar"><span id="files-total" class="result-meta">0 个文件</span><div class="files-view-switch" role="group" aria-label="文件显示方式"><button id="files-view-list" type="button" aria-pressed="true" title="列表视图">列表</button><button id="files-view-grid" type="button" aria-pressed="false" title="网格视图">网格</button></div></div>
+            <p id="files-message" role="status" aria-live="polite"></p><div id="files-list" aria-label="文件列表"></div>
+            <div class="pagination"><button id="files-prev" class="secondary-button">上一页</button><span id="files-page"></span><button id="files-next" class="secondary-button">下一页</button></div>
+            <details class="files-help"><summary>导入说明与对话同步</summary><p>单个文件最大 50 MB，保留原件。GPT 对话支持 conversations.json 或官方导出 ZIP，保留消息与分支。导入文件不会自动生成记忆。</p><p>浏览器持续同步（试验功能）：安装随程序提供的 ShirOS GPT Sync 扩展，在 ChatGPT 对话页点击扩展按钮开启同步。扩展会将已加载消息写入浏览器下载目录的 ShirOS-GPT 文件夹；桌面端会在运行期间导入更新。不保证获取页面未加载的消息或其他分支。完整存档请使用官方数据导出。</p></details>
           </section>
           <section id="music-view" class="view hidden">
-            <div class="page-heading"><div><p class="eyebrow">SHIROS MUSIC</p><h1>音乐库</h1><p class="subheading">作品、演绎与收藏，长久保存</p></div><div class="heading-actions"><button class="secondary-button" id="music-export">导出档案</button><button class="secondary-button" id="music-import">豆瓣导入</button><button class="primary-button" id="music-new">＋ 新建</button></div></div>
-            <div class="music-tabs" id="music-tabs"><button data-library="all" class="active">总曲库</button><button data-library="five-star">五星</button><button data-library="featured">精选</button><button data-library="frequent">常用</button></div>
-            <div class="toolbar music-toolbar"><label class="searchbox"><span>⌕</span><input id="music-search" type="search" placeholder="搜索标题或关联音乐家、作品…" /></label><select id="music-kind" aria-label="音乐对象"><option value="release">专辑 / 发行</option><option value="work">作品</option><option value="recording">录音 / 演出</option><option value="person">音乐家</option><option value="group">乐团 / 乐队</option><option value="organization">厂牌 / 机构</option></select><select id="music-status" aria-label="聆听状态"><option value="">全部状态</option><option value="wishlist">想听</option><option value="listening">在听</option><option value="listened">听过</option></select><button class="secondary-button" id="music-layout">列表</button></div>
-            <p id="music-summary" class="subheading"></p><p id="music-message" role="status"></p>
-            <div class="music-library-body"><aside class="music-classifications" aria-label="音乐分类"><div class="classification-heading"><span>分类目录</span><button id="music-taxonomy-manage" type="button" title="管理标签和 Genre">＋</button></div><button id="music-all-tags" type="button" class="tree-filter">全部音乐</button><button id="music-untagged" type="button" class="tree-filter">无标签</button><details open><summary>Genre · 音乐风格</summary><div id="music-genre-tree" class="classification-tree"></div></details><details open><summary>私人标签</summary><div id="music-tag-tree" class="classification-tree"></div></details><p class="taxonomy-help">标签可留空；音乐风格与记忆标签独立。</p></aside><div class="music-layout"><div><div id="music-grid" class="music-grid"></div><div class="music-pagination"><button class="secondary-button" id="music-prev">上一页</button><span id="music-page"></span><button class="secondary-button" id="music-next">下一页</button></div></div><article id="music-detail" class="detail-panel music-detail"><div class="empty-detail"><span class="empty-symbol">♫</span><h2>选择一张唱片或作品</h2><p>查看资料、评价、音源与历史</p></div></article></div></div>
+            <div class="music-page-bar"><div class="music-tabs" id="music-tabs" aria-label="音乐资料库"><button data-library="recording" class="active">录音与发行</button><button data-library="work">作品库</button><button data-library="people">人物 / 组织库</button></div><div class="heading-actions"><button class="secondary-button" id="music-listening">聆听</button><button class="secondary-button" id="music-export">导出档案</button><button class="secondary-button" id="music-import">豆瓣导入</button><button class="primary-button" id="music-new">＋ 新建</button></div></div>
+            <div class="toolbar music-toolbar"><label class="searchbox"><span>⌕</span><input id="music-person-filter" type="hidden" /><input id="music-search" type="search" placeholder="搜索录音、发行与关联名称…" /></label><select id="music-kind" aria-label="音乐对象"><option value="recording">录音</option><option value="release">发行</option><option value="work">作品</option><option value="person">音乐家</option><option value="group">乐团 / 乐队</option><option value="organization">厂牌 / 机构</option></select><select id="music-status" aria-label="聆听状态"><option value="">全部状态</option><option value="wishlist">想听</option><option value="listening">在听</option><option value="listened">听过</option></select><button class="secondary-button" id="music-layout">列表</button></div>
+            <div id="music-rating-filter" class="music-rating-filter"><span>星级区间</span><div class="music-dual-range"><div class="music-range-rail"></div><input id="music-rating-min" aria-label="星级下限" type="range" min="0" max="7" value="0"><input id="music-rating-max" aria-label="星级上限" type="range" min="0" max="7" value="7"></div><output id="music-rating-range">不限评分</output><label><input id="music-rated-only" type="checkbox">按七星评分筛选</label><label><input id="music-unrated" type="checkbox">未评分</label></div><section id="music-listening-panel" class="music-listening-panel" hidden></section><p id="music-summary" class="subheading" hidden></p><p id="music-message" role="status"></p>
+            <div class="music-library-body"><aside class="music-classifications" aria-label="音乐分类"><div class="classification-heading"><span>分类目录</span><button id="music-taxonomy-manage" type="button" title="管理标签和 Genre">管理</button></div><div class="music-collections" aria-label="发行收藏"><button id="music-featured" type="button"><span class="collection-star">★</span>精选集</button><button id="music-frequent" type="button"><span class="collection-heart">♥</span>常听集</button><button id="music-collection-back" type="button" hidden>返回录音与发行</button></div><button id="music-all-tags" type="button" class="tree-filter">全部音乐</button><button id="music-untagged" type="button" class="tree-filter">无标签</button><details><summary>更多筛选</summary><div class="music-month-range"><span>录制 / 发行月份</span><label>从<input id="music-date-from" type="month" aria-label="起始月份"></label><label>至<input id="music-date-to" type="month" aria-label="结束月份"></label></div></details><details open><summary>音乐风格</summary><div id="music-genre-tree" class="classification-tree"></div></details><details open><summary>私人标签</summary><div id="music-tag-tree" class="classification-tree"></div></details></aside><div class="music-layout"><div><div id="music-grid" class="music-grid"></div><div class="music-pagination"><button class="secondary-button" id="music-prev">上一页</button><span id="music-page"></span><button class="secondary-button" id="music-next">下一页</button></div></div><article id="music-detail" class="detail-panel music-detail"><div class="empty-detail"><span class="empty-symbol">♫</span><h2>选择音乐档案</h2><p>查看资料、评价、音源与历史</p></div></article></div></div>
           </section>
           <section id="memory-view" class="view">
-            <div class="page-heading">
-              <div>
-                <p class="eyebrow" data-i18n="recentMemories">最近添加</p>
-                <h1 data-i18n="memoryTitle">记忆</h1>
-                <p class="subheading" data-i18n="memorySub">
-                  已确认并可供检索的内容
-                </p>
-              </div>
-              <div class="heading-actions">
-              <button class="secondary-button" id="expand-memory" data-i18n="expandMemories">展开全部</button>
-              <button class="secondary-button" id="export-memories-md">导出全部 .md</button>
-              <button class="primary-button" id="go-import">
-                <span>＋</span><span data-i18n="addMemory">添加记忆</span>
-              </button>
-              </div>
-            </div>
-            <div class="toolbar">
+            <div class="toolbar memory-toolbar">
               <label class="searchbox"
                 ><span aria-hidden="true">⌕</span
                 ><input
@@ -124,7 +137,13 @@
                 /><kbd>/</kbd></label
               >
               <div class="result-meta" id="memory-result-meta"></div>
-            </div>
+            <div class="heading-actions">
+              <button class="secondary-button" id="expand-memory" data-i18n="expandMemories">展开全部</button>
+              <button class="secondary-button" id="export-memories-md">导出全部 .md</button>
+              <button class="primary-button" id="go-import">
+                <span>＋</span><span data-i18n="addMemory">添加记忆</span>
+              </button>
+              </div></div>
             <div class="split-layout">
               <div
                 class="list-panel"
@@ -142,16 +161,6 @@
           </section>
 
           <section id="review-view" class="view hidden">
-            <div class="page-heading">
-              <div>
-                <p class="eyebrow" data-i18n="humanReview">人工确认</p>
-                <h1 data-i18n="reviewTitle">待审队列</h1>
-                <p class="subheading" data-i18n="reviewSub">
-                  确认前不会写入长期记忆
-                </p>
-              </div>
-              <span class="queue-total" id="queue-total">0</span>
-            </div>
             <div class="split-layout review-layout">
               <div class="list-panel" id="review-list"></div>
               <article class="detail-panel" id="review-detail">
@@ -166,7 +175,7 @@
 
           <section id="library-view" class="view hidden">
             <div class="page-heading">
-              <div><p class="eyebrow" data-i18n="allMemories">全部记忆</p><h1 data-i18n="memoryTitle">记忆</h1></div>
+
               <div class="heading-actions">
               <button id="collapse-memory" class="secondary-button" data-i18n="collapseMemories">收起</button>
               <button id="manage-tags" class="secondary-button" data-i18n="manageTags">管理标签</button>
@@ -177,34 +186,30 @@
                 <button data-library-mode="tags" class="active" aria-pressed="true" data-i18n="groupTags">标签分组</button>
                 <button data-library-mode="date" aria-pressed="false" data-i18n="byDate">添加日期</button>
               </div>
-              <span class="result-meta" id="library-result-meta"></span>
+
             </div>
             <div class="split-layout library-layout">
               <div class="library-browser">
+                <aside id="library-tag-nav" class="library-tag-nav" aria-label="标签目录">
+                  <div class="library-tag-heading"><span>标签目录</span><div><button id="memory-tags-expand" type="button" title="展开所有标签" aria-label="展开所有标签">＋</button><button id="memory-tags-collapse" type="button" title="收起所有标签" aria-label="收起所有标签">−</button></div></div>
                 <div id="tag-filter" class="tag-filter"><button type="button" id="memory-untagged" class="secondary-button">无标签</button><input id="tag-search" type="search" class="text-input" data-i18n-placeholder="findTags" placeholder="搜索标签" aria-label="搜索标签" /></div>
                 <div id="tag-tree" class="tag-tree" aria-label="Tags"></div>
-                <div id="library-location" class="library-location"></div>
+                </aside>
+                <section class="library-results" aria-label="分组记忆">
+                  <div class="library-results-heading"><div id="library-location" class="library-location"></div><span class="result-meta" id="library-result-meta"></span></div>
                 <div id="library-list" class="list-panel" aria-label="Library memories"></div>
                 <div class="pagination">
                   <button id="library-prev" class="secondary-button" aria-label="Previous page" title="Previous page">←</button>
                   <span id="library-page"></span>
                   <button id="library-next" class="secondary-button" aria-label="Next page" title="Next page">→</button>
                 </div>
+                </section>
               </div>
               <article id="library-detail" class="detail-panel"></article>
             </div>
           </section>
 
           <section id="import-view" class="view hidden">
-            <div class="page-heading">
-              <div>
-                <p class="eyebrow" data-i18n="bringKnowledge">导入内容</p>
-                <h1 data-i18n="importTitle">新增记忆</h1>
-                <p class="subheading" data-i18n="importSub">
-                  内容先预览，再决定是否送审
-                </p>
-              </div>
-            </div>
             <div class="import-layout">
               <section class="import-form" aria-labelledby="import-form-title">
                 <h2 id="import-form-title" data-i18n="sourceContent">
@@ -240,21 +245,18 @@
                 <textarea
                   id="import-text"
                   rows="12"
-                  maxlength="50000"
+                  maxlength="10000000"
                   placeholder="输入或粘贴你希望记住的内容…"
                   data-i18n-placeholder="contentPlaceholder"
                 ></textarea>
                 <div class="form-footer">
-                  <label class="file-button" for="import-file"
-                    ><span>↑</span
-                    ><span data-i18n="chooseFile">选择文件</span></label
-                  ><input
+                  <button class="file-button" id="choose-import-file" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h5l2 2h5v8H4zM4 6V4h6l2 2"/></svg><span data-i18n="chooseFile">选择文件</span></button><input
                     id="import-file"
                     class="visually-hidden"
                     type="file"
                     accept=".txt,.md,.json,.csv,text/plain,text/markdown,application/json,text/csv"
-                  /><span id="file-name" class="file-name"></span
-                  ><span class="char-count" id="char-count">0 / 50000</span>
+                  /><span class="file-format-hint">TXT · MD · JSON · CSV</span><span id="file-name" class="file-name"></span
+                  ><span class="char-count" id="char-count">0 / 10,000,000</span>
                 </div>
                 <div class="form-actions">
                   <button

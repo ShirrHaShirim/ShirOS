@@ -10,7 +10,7 @@ from shiros.config import Settings
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="ShirOS", version="0.5.0")
+    app = FastAPI(title="ShirOS", version="0.7.18")
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(_: Request, __: RequestValidationError) -> JSONResponse:

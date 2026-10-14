@@ -11,6 +11,7 @@ from shiros.core.ingestion import MemoryWrite
 from shiros.core.permissions import ExplicitGrantPermissions
 from shiros.core.privacy import AMOUNT, PrivacyInput, RuleBasedPrivacyPolicy, Sensitivity
 from shiros.identity import DatabasePermissions, audit
+from shiros.memory_metadata import store_initial_canonical_title
 from shiros.shared_memory import build_shared_memory
 
 POLICY_PRINCIPAL = "system:auto-review:ordinary-v1"
@@ -49,9 +50,7 @@ def review_reason(*values: str) -> str:
                 or SENSITIVE.search(content)
             ):
                 return "requires_sensitive_review"
-            if len(content) > 6000 or any(
-                unicodedata.category(char) in {"Cf", "Co", "Cs"} for char in content
-            ):
+            if any(unicodedata.category(char) in {"Cf", "Co", "Cs"} for char in content):
                 return "requires_uncertain_review"
     return "auto_approve_ordinary_v1"
 
@@ -124,6 +123,7 @@ def approve_new_candidate(
     )
     approval = services.reviews.approve(reviewer, actor, request)
     memory = asyncio.run(services.memory._ingest(actor, request, approval, connection))
+    store_initial_canonical_title(connection, memory, row["title"])
     connection.execute(
         text("INSERT INTO review_source_links VALUES (:intake,:source) ON CONFLICT DO NOTHING"),
         {"intake": row["source_id"], "source": memory.provenance.source_id},

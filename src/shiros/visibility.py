@@ -14,7 +14,12 @@ def visible_memory(alias: str = "m") -> str:
         f"OR (rv.kind='memory' AND rv.target_id={alias}.memory_id))) "
         f"AND NOT coalesce((SELECT hidden FROM memory_visibility mv "
         f"WHERE mv.memory_id={alias}.memory_id AND mv.scope_id={alias}.scope_id "
-        "ORDER BY mv.id DESC LIMIT 1),false)"
+        "ORDER BY mv.id DESC LIMIT 1),false) "
+        f"AND NOT EXISTS (SELECT 1 FROM capture_merged_memories cm "
+        "JOIN capture_entries ce ON ce.id=cm.entry_id "
+        f"WHERE cm.memory_id={alias}.memory_id AND (ce.memory_id IS NOT NULL "
+        "OR EXISTS (SELECT 1 FROM candidate_states cs WHERE cs.candidate_id=ce.candidate_id "
+        "AND cs.status='approved')))"
     )
 
 

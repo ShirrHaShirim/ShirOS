@@ -1,0 +1,23 @@
+/* One card system for synthesis revisions and maintenance tasks. */
+.knowledge-main{width:100%}
+.knowledge-main .knowledge-section-heading{min-height:34px;margin:0 0 12px;gap:12px;align-items:center;flex-wrap:wrap}
+.knowledge-section-title{display:flex;align-items:center;gap:9px}.knowledge-main .knowledge-section-title h2{margin:0;font-size:14px;font-weight:600}
+.knowledge-section-count{padding:3px 7px;border:1px solid var(--line);border-radius:6px;background:var(--soft);color:var(--muted);font-size:10px;line-height:1.2;font-variant-numeric:tabular-nums}
+.knowledge-filter{gap:6px}.knowledge-filter select{height:30px;padding:4px 10px;border-radius:7px}
+.knowledge-main .knowledge-layers,.knowledge-main .knowledge-jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:2px 4px 4px 0;align-content:start;align-items:start;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:auto}
+.knowledge-main .knowledge-card{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;min-width:0;padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--paper);box-shadow:none}
+.knowledge-main .knowledge-card+.knowledge-card{border-top:1px solid var(--line)}
+.knowledge-main .knowledge-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.knowledge-card-title{min-width:0}
+.knowledge-main .knowledge-card-heading .eyebrow{margin:0 0 7px;font-size:10px;line-height:1.5;color:var(--muted);font-weight:400;letter-spacing:0}
+.knowledge-main .knowledge-card-heading h3{margin:0;font-size:15px;line-height:1.5;font-weight:600;overflow-wrap:anywhere}
+.knowledge-main .knowledge-badge{flex-shrink:0;border-radius:6px;font-size:10px;padding:3px 7px;line-height:1.5}
+.knowledge-badge.is-current,.knowledge-badge.state-published{background:var(--soft);color:var(--accent)}
+.knowledge-main .knowledge-card-meta{margin:10px 0 0;font-size:11px;line-height:1.8;color:var(--muted);overflow-wrap:anywhere}
+.knowledge-main .knowledge-history,.knowledge-main .knowledge-job-actions{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.knowledge-main .knowledge-history summary{font-size:11px;color:var(--accent);line-height:1.8}.knowledge-main .knowledge-job-actions{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:6px}
+.knowledge-main .knowledge-job-actions button{font-size:11px;padding:7px 10px;border-radius:7px}.knowledge-main .knowledge-text-button{border:1px solid transparent}
+.knowledge-main .knowledge-empty{grid-column:1/-1;min-height:170px;padding:28px 20px;border:1px dashed var(--line);border-radius:12px;background:var(--paper)}
+.knowledge-main .knowledge-empty h3{font-size:15px;font-weight:600}.knowledge-main .knowledge-empty p{font-size:11px}.knowledge-main .knowledge-empty-mark{font-size:26px;margin-bottom:12px}
+.knowledge-main .knowledge-pagination{margin:10px 0 0;gap:12px}.knowledge-main .knowledge-pagination button{padding:7px 12px;font-size:11px}
+@media(max-width:1000px){.knowledge-main .knowledge-layers,.knowledge-main .knowledge-jobs{grid-template-columns:1fr}}
+@media(max-width:600px){.knowledge-sidebar{width:100%}.knowledge-main .knowledge-card{padding:16px}.knowledge-main .knowledge-section-heading{gap:8px}.knowledge-main .knowledge-badge{font-size:9px}.knowledge-main .knowledge-card-heading{gap:8px}}

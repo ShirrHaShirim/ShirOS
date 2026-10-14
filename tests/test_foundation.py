@@ -123,13 +123,13 @@ def test_privacy_redacts_contacts_and_preserves_names() -> None:
     policy = RuleBasedPrivacyPolicy()
     decision = policy.evaluate(
         PrivacyInput(
-            text="SyntheticName synthetic@example.com +86 138-0000-0000 支付 42元",
+            text="ShirHaShirim synthetic@example.com +86 138-0000-0000 支付 42元",
             reviewed=True,
         )
     )
     assert decision.persistence_allowed
     assert decision.safe_text is not None
-    assert "SyntheticName" in decision.safe_text
+    assert "ShirHaShirim" in decision.safe_text
     assert "synthetic@example.com" not in decision.safe_text
     assert "138" not in decision.safe_text
     assert "42" not in decision.safe_text

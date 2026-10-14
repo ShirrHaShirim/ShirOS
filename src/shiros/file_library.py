@@ -3,11 +3,12 @@
 import base64
 import hashlib
 import re
+from contextlib import nullcontext
 from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Engine, text
+from sqlalchemy import Connection, Engine, text
 
 from shiros.identity import DatabasePermissions
 
@@ -33,6 +34,7 @@ class FileRequest(BaseModel):
     offset: int = Field(default=0, ge=0)
     limit: int = Field(default=50, ge=1, le=100)
     external_key: str | None = Field(default=None, max_length=300)
+    include_files: bool = False
 
 
 def safe_filename(name: str) -> str:
@@ -44,10 +46,12 @@ class FileLibrary:
     def __init__(self, engine: Engine, actor: UUID, scope: UUID) -> None:
         self.engine, self.actor, self.scope = engine, actor, scope
 
-    def run(self, action: str, value: FileRequest) -> dict[str, Any]:
+    def run(
+        self, action: str, value: FileRequest, *, connection: Connection | None = None
+    ) -> dict[str, Any]:
         if action not in {"list", "upload", "conversation-import", "read", "delete"}:
             raise ValueError("files.invalid_action")
-        with self.engine.begin() as c:
+        with self.engine.begin() if connection is None else nullcontext(connection) as c:
             DatabasePermissions(c).require(
                 self.actor, self.scope, "read" if action in {"list", "read"} else "admin"
             )

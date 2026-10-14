@@ -20,7 +20,6 @@ from shiros.memory_mutations import edit_memory
         "工资 5000 元",
         "My partner prefers this",
         "Unknown origin",
-        "x" * 6001,
         "Synthetic\u200bnote",
         "[REDACTED_EMAIL]",
         "Ｓｙｎｔｈｅｔｉｃ ｈｅａｌｔｈ",
@@ -38,6 +37,7 @@ def test_sensitive_or_uncertain_needs_review(value: str) -> None:
 
 
 def test_ordinary_and_blocked_policy() -> None:
+    assert review_reason("Synthetic geometry. " * 10000) == "auto_approve_ordinary_v1"
     assert review_reason("I prefer concise answers") == "auto_approve_ordinary_v1"
     assert review_reason("Reading notes separate evidence and open questions.") == (
         "auto_approve_ordinary_v1"

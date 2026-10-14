@@ -3,6 +3,7 @@
 import asyncio
 import json
 import re
+from contextlib import nullcontext
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -18,6 +19,7 @@ from shiros.core.records import PersistenceMetadata
 from shiros.core.schemas import Provenance, utc_now
 from shiros.identity import DatabasePermissions, audit
 from shiros.intake import content_hash
+from shiros.memory_limits import MAX_MEMORY_CHARS
 from shiros.memory_metadata import SourceRecord, details
 from shiros.shared_memory import build_shared_memory
 from shiros.visibility import memory_visible
@@ -271,10 +273,14 @@ def _mutate(
     sources: list[dict[str, Any]] | None = None,
     source_text: str | None = None,
     source_title: str | None = None,
+    connection: Connection | None = None,
+    capture_review: bool = False,
 ) -> dict[str, Any]:
     if not 1 <= expected_revision <= 2147483647:
         raise ValueError("memory.invalid_input")
-    with engine.begin() as connection:
+    if value is not None and len(value) > MAX_MEMORY_CHARS:
+        raise ValueError("memory.too_large")
+    with engine.begin() if connection is None else nullcontext(connection) as connection:
         _require(connection, actor, scope, "memory_edit")
         repository = PostgresMemoryRepository(connection)
         current = asyncio.run(repository.get(memory_id))
@@ -297,7 +303,7 @@ def _mutate(
         services = build_shared_memory(engine, DatabasePermissions(connection))
         old = details(connection, current)
         safe_text, _ = services.memory.sanitize(current.text if value is None else value)
-        if len(safe_text) > 20000:
+        if len(safe_text) > MAX_MEMORY_CHARS:
             raise ValueError("memory.too_large")
         safe_title, _ = services.memory.sanitize(old["title"] if title is None else title)
         if len(safe_title) > 250:
@@ -399,9 +405,9 @@ def _mutate(
         for record in safe_sources:
             if record["id"] is None:
                 record["id"] = str(uuid4())
-        if not DatabasePermissions(connection).has(actor, scope, "review") and _needs_review(
-            safe_text, safe_title, safe_sources, current, old
-        ):
+        if (
+            capture_review or not DatabasePermissions(connection).has(actor, scope, "review")
+        ) and _needs_review(safe_text, safe_title, safe_sources, current, old):
             return _stage_edit(
                 connection, actor, current, safe_text, safe_title, safe_sources, request_id, digest
             )
@@ -428,6 +434,9 @@ def edit_memory(
     expected_revision: int,
     value: str,
     request_id: UUID,
+    *,
+    connection: Connection | None = None,
+    capture_review: bool = False,
 ) -> dict[str, Any]:
     return _mutate(
         engine,
@@ -438,6 +447,8 @@ def edit_memory(
         request_id,
         operation="edit",
         value=value,
+        connection=connection,
+        capture_review=capture_review,
     )
 
 

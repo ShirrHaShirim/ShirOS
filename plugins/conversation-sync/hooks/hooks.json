@@ -1,0 +1,7 @@
+{
+ "description":"Sync only a conversation explicitly paired in the user's local ShirOS config.",
+ "hooks":{
+  "UserPromptSubmit":[{"hooks":[{"type":"command","command":"python \"${PLUGIN_ROOT}/hooks/capture_hook.py\"","timeout":10}]}],
+  "Stop":[{"hooks":[{"type":"command","command":"python \"${PLUGIN_ROOT}/hooks/capture_hook.py\"","timeout":10}]}]
+ }
+}

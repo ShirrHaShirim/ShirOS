@@ -78,7 +78,21 @@ class DatabasePermissions:
             text("SELECT role FROM local_grants WHERE actor_id=:actor AND scope_id=:scope"),
             {"actor": actor, "scope": scope},
         ).scalar_one_or_none()
-        return role is not None and action in RIGHTS[Role(role)]
+        if role is None:
+            return False
+        if action in RIGHTS[Role(role)]:
+            return True
+        if action != "music_write":
+            return False
+        return bool(
+            self.connection.scalar(
+                text(
+                    "SELECT 1 FROM client_capability_grants WHERE actor_id=:a AND scope_id=:s "
+                    "AND capability='music_write'"
+                ),
+                {"a": actor, "s": scope},
+            )
+        )
 
     def require(self, actor: UUID, scope: UUID, action: str) -> None:
         if not self.has(actor, scope, action):

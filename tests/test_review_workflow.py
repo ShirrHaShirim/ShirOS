@@ -150,7 +150,8 @@ def test_supported_formats(tmp_path: Path, name: str, content: str, kind: str) -
     assert preview.kind == kind and preview.privacy.persistence_allowed
 
 
-def test_preview_limits_and_hardlinks(tmp_path: Path) -> None:
+def test_preview_limits_and_hardlinks(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("shiros.intake.MAX_BYTES", 65536)
     source = tmp_path / "large.txt"
     source.write_text("x" * 65537, encoding="utf-8")
     with pytest.raises(ValueError, match="too_large"):

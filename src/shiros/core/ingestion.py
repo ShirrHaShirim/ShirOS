@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import Field, model_validator
 
 from shiros.core.schemas import EvidenceLevel, Schema, UtcTimestamp
+from shiros.memory_limits import MAX_MEMORY_CHARS
 
 
 class MemoryWrite(Schema):
@@ -13,8 +14,8 @@ class MemoryWrite(Schema):
     idempotency_key: UUID
     source_kind: Literal["note", "synthetic"] = "note"
     source_title: str = Field(min_length=1, max_length=500)
-    source_text: str = Field(min_length=1, max_length=100_000)
-    text: str = Field(min_length=1, max_length=20_000)
+    source_text: str = Field(min_length=1, max_length=MAX_MEMORY_CHARS)
+    text: str = Field(min_length=1, max_length=MAX_MEMORY_CHARS)
     entity_title: str = Field(min_length=1, max_length=500)
     entity_kind: Literal["note", "concept", "person", "project"] = "note"
     domain: Literal["general", "knowledge", "projects", "people", "music", "papers"] = "general"

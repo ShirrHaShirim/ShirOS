@@ -39,15 +39,11 @@ def keyword_hits(engine: Engine, actor_id: UUID, scope: UUID, query: str) -> lis
 
 
 @pytest.mark.integration
-def test_editor_edit_creates_revision_and_is_idempotent(
-    db_engine: Engine, tmp_path: Path
-) -> None:
+def test_editor_edit_creates_revision_and_is_idempotent(db_engine: Engine, tmp_path: Path) -> None:
     scope = uuid4()
     _, memory_id = approved_memory(db_engine, scope, tmp_path)
     editor, request = actor(db_engine, scope, "editor"), uuid4()
-    edited = edit_memory(
-        db_engine, editor, scope, memory_id, 1, "Synthetic revised note", request
-    )
+    edited = edit_memory(db_engine, editor, scope, memory_id, 1, "Synthetic revised note", request)
     assert edited["memory_id"] == str(memory_id)
     assert edited["revision"] == 2
     assert keyword_hits(db_engine, editor, scope, "revised") == [str(memory_id)]
@@ -96,9 +92,7 @@ def test_editor_edit_creates_revision_and_is_idempotent(
 
 
 @pytest.mark.integration
-def test_editor_edit_permission_privacy_and_visibility(
-    db_engine: Engine, tmp_path: Path
-) -> None:
+def test_editor_edit_permission_privacy_and_visibility(db_engine: Engine, tmp_path: Path) -> None:
     scope = uuid4()
     review = workflow(db_engine, scope, tmp_path)
     proposer = actor(db_engine, scope, "proposer")
@@ -113,11 +107,9 @@ def test_editor_edit_permission_privacy_and_visibility(
     with pytest.raises(PermissionError, match="permission.denied"):
         edit_memory(db_engine, editor, uuid4(), memory.memory_id, 1, "Synthetic", uuid4())
     with pytest.raises(PermissionError, match="privacy"):
-        edit_memory(
-            db_engine, editor, scope, memory.memory_id, 1, "password=synthetic", uuid4()
-        )
+        edit_memory(db_engine, editor, scope, memory.memory_id, 1, "password=synthetic", uuid4())
     with pytest.raises(ValueError, match="too_large"):
-        edit_memory(db_engine, editor, scope, memory.memory_id, 1, "x" * 20001, uuid4())
+        edit_memory(db_engine, editor, scope, memory.memory_id, 1, "x" * 10_000_001, uuid4())
     review.hide(scope, memory.memory_id, True)
     with pytest.raises(PermissionError, match="not_visible"):
         edit_memory(db_engine, editor, scope, memory.memory_id, 1, "Synthetic note", uuid4())
@@ -127,9 +119,7 @@ def test_editor_edit_permission_privacy_and_visibility(
 
 
 @pytest.mark.integration
-def test_editor_delete_is_soft_idempotent_and_audited(
-    db_engine: Engine, tmp_path: Path
-) -> None:
+def test_editor_delete_is_soft_idempotent_and_audited(db_engine: Engine, tmp_path: Path) -> None:
     scope = uuid4()
     review = workflow(db_engine, scope, tmp_path)
     _, memory_id = approved_memory(db_engine, scope, tmp_path)
@@ -162,10 +152,7 @@ def test_editor_delete_is_soft_idempotent_and_audited(
         )
         assert (
             connection.scalar(
-                text(
-                    "SELECT count(*) FROM revocations "
-                    "WHERE kind='memory' AND target_id=:m"
-                ),
+                text("SELECT count(*) FROM revocations WHERE kind='memory' AND target_id=:m"),
                 {"m": memory_id},
             )
             == 1

@@ -20,6 +20,19 @@ class SourceRecord(BaseModel):
     observed_at: UtcTimestamp | None = None
 
 
+def store_initial_canonical_title(connection: Connection, memory: Memory, safe_title: str) -> None:
+    """Keep canonical display separators separately from normalized immutable sources."""
+    parts = [part.strip() for part in safe_title.replace("｜", "|").split("|")]
+    if len(parts) == 3 and all(parts):
+        connection.execute(
+            text(
+                "INSERT INTO memory_revision_metadata(revision_id,scope_id,title,source_records) "
+                "VALUES (:id,:s,:t,'[]'::jsonb) ON CONFLICT(revision_id) DO NOTHING"
+            ),
+            {"id": memory.id, "s": memory.scope_id, "t": "｜".join(parts)},
+        )
+
+
 def details(connection: Connection, memory: Memory) -> dict[str, Any]:
     row = (
         connection.execute(

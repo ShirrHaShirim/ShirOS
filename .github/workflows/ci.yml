@@ -1,7 +1,25 @@
-name: Foundation
+name: ShirOS CI
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
-  verify:
+  unit-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked --python 3.12
+      - run: uv run shiros lint
+      - run: uv run shiros test
+  types:
+    # Kept strict and visible: known debt is documented, never reported as passing.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --all-groups --locked --python 3.12
+      - run: uv run mypy --platform win32
+  database-integration:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -24,9 +42,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes postgresql-client-16
           echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
-      - run: uv sync --all-groups --locked --python 3.12
-      - run: uv run shiros lint
-      - run: uv run mypy --platform win32
-      - run: uv run shiros test
+      - run: uv sync --locked --python 3.12
       - run: uv run shiros integration
 

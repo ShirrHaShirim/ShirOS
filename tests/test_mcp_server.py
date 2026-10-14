@@ -8,6 +8,11 @@ from shiros.adapters.mcp.server import create_http_app, create_server
 
 
 class FakeGateway:
+    async def knowledge(
+        self, action: str, payload: dict[str, Any], *, mutate: bool = False
+    ) -> dict[str, Any]:
+        return {"action": action, "mutate": mutate}
+
     async def music_query(self, action: str, payload: dict[str, Any]) -> dict[str, Any]:
         self.calls.append("music_query")
         return {"items": []}
@@ -148,8 +153,11 @@ async def test_mcp_tools_are_bounded_with_proposals_and_additive_tag_writes() ->
         "migrate_memory_sources",
         "music_query",
         "music_mutate",
+        "knowledge_query",
+        "knowledge_maintain",
     }
     read_only = {
+        "knowledge_query",
         "music_query",
         "search",
         "fetch",
@@ -161,6 +169,7 @@ async def test_mcp_tools_are_bounded_with_proposals_and_additive_tag_writes() ->
         "get_memory_sources",
     }
     destructive = {
+        "music_mutate",
         "edit_memory",
         "delete_memory",
         "delete_tag",
@@ -173,7 +182,9 @@ async def test_mcp_tools_are_bounded_with_proposals_and_additive_tag_writes() ->
         assert tool.annotations
         assert tool.annotations.read_only_hint == (tool.name in read_only)
         assert tool.annotations.destructive_hint == (tool.name in destructive)
-        assert tool.annotations.idempotent_hint == (tool.name != "music_mutate")
+        assert tool.annotations.idempotent_hint == (
+            tool.name not in {"music_mutate", "knowledge_maintain"}
+        )
         assert tool.annotations.open_world_hint is False
         assert "scope" not in tool.input_schema.get("properties", {})
         assert "actor" not in tool.input_schema.get("properties", {})
@@ -275,7 +286,7 @@ async def test_mcp_tag_tools_delegate_and_hide_permission_errors() -> None:
             {
                 "memory_id": str(uuid4()),
                 "expected_revision": 1,
-                "text": "a" * 20001,
+                "text": "a" * 10_000_001,
                 "request_id": str(uuid4()),
             },
         ),
@@ -525,8 +536,7 @@ async def test_mcp_error_codes_distinguish_review_from_scope_denial_and_conflict
         {"title": "a" * 251, "text": "note"},
         {"title": "title", "text": ""},
         {"title": "title", "text": " "},
-        {"title": "title", "text": "a" * 20001},
-        {"title": "title", "text": "\U0001f600" * 17000},
+        {"title": "title", "text": "a" * 10_000_001},
         {"title": "title", "text": "\ud800"},
         {"title": "title", "text": "note", "request_id": "secret-not-uuid"},
         {"title": {"password": "secret"}, "text": "note"},

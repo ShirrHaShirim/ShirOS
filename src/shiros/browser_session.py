@@ -12,7 +12,7 @@ from shiros.identity import os_principal
 SESSION_ROOT = Path(__file__).resolve().parents[2] / ".local" / "browser-session"
 
 
-def start_session(port: int) -> str:
+def start_session(port: int, *, reuse: bool = False) -> str:
     SESSION_ROOT.mkdir(parents=True, exist_ok=True)
     if SESSION_ROOT.is_symlink() or SESSION_ROOT.is_junction():
         raise PermissionError("permission.denied")
@@ -36,6 +36,17 @@ def start_session(port: int) -> str:
     target = SESSION_ROOT / "session.json"
     if target.is_symlink():
         raise PermissionError("permission.denied")
+    if reuse:
+        session = json.loads(target.read_text(encoding="utf-8"))
+        previous = session.get("token", "")
+        if session.get("port") != port or not isinstance(previous, str) or len(previous) != 43:
+            raise ValueError("session.invalid")
+        if any(
+            char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-"
+            for char in previous
+        ):
+            raise ValueError("session.invalid")
+        return previous
     target.write_text(json.dumps({"port": port, "token": token}), encoding="utf-8")
     if os.name != "nt":
         target.chmod(0o600)

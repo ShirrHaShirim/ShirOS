@@ -1,4 +1,5 @@
 (() => {
+  const ui = window.ShirosI18n.message;
   "use strict";
   const tokenFromHash = new URLSearchParams(location.hash.slice(1)).get(
     "token",
@@ -19,6 +20,7 @@
       musicTitle: "音乐库",
       navReview: "待审",
       navImport: "导入",
+      navMaintenance: "维护",
       localOnly: "仅本机",
       localWorkspace: "本机工作区",
       lockedTitle: "会话未开启",
@@ -32,24 +34,24 @@
       selectMemorySub: "查看内容、来源与记录时间",
       humanReview: "人工确认",
       reviewTitle: "待审队列",
-      reviewSub: "确认前不会写入长期记忆",
+      reviewSub: "审核通过后可供检索",
       selectCandidate: "选择待审内容",
       selectCandidateSub: "审阅来源并决定是否保留",
       bringKnowledge: "导入内容",
       importTitle: "新增记忆",
-      importSub: "内容先预览，再决定是否送审",
+      importSub: "预览内容后提交审核",
       sourceContent: "来源内容",
       titleLabel: "标题",
       titlePlaceholder: "例如：写作偏好",
       contentLabel: "文本内容",
       loadExample: "载入示例",
-      contentPlaceholder: "输入或粘贴你希望记住的内容…",
+      contentPlaceholder: "输入或粘贴记忆正文…",
       chooseFile: "选择文件",
       preview: "预览",
       sendToReview: "送交审核",
       previewTitle: "预览",
       notPreviewed: "尚未预览",
-      previewHelp: "标题与文本准备好后，点击预览检查处理结果。",
+      previewHelp: "填写标题与正文后预览处理结果。",
       privacyNote: "原文不落盘；确认送审后仅保存安全文本。",
       confirmAction: "确认操作",
       cancel: "取消",
@@ -70,12 +72,12 @@
       hide: "隐藏",
       unhide: "取消隐藏",
       noMemories: "还没有记忆",
-      noMemoriesSub: "导入内容并通过审核后，记忆会显示在这里。",
+      noMemoriesSub: "提交内容并通过审核后显示。",
       startImport: "开始导入",
       noCandidates: "队列为空",
       noCandidatesSub: "新导入的内容会先出现在待审队列。",
       noResults: "没有匹配结果",
-      noResultsSub: "试试其他关键词。",
+      noResultsSub: "请调整搜索关键词。",
       emptyTitle: "请填写标题",
       emptyText: "请填写文本内容",
       previewFirst: "请先预览这份内容",
@@ -113,18 +115,22 @@
       visibleLabel: "可见",
       searchCount: "条记录",
       fileInvalid: "请选择 .txt、.md、.json 或 .csv 文件。",
-      fileTooLarge: "文件内容超过 50000 字符限制。",
+      fileTooLarge: "文件内容超过 1,000 万字符限制。",
       revokeSource: "来源",
       revokeMemory: "记忆",
       revisionConflict: "候选内容已变化，请重新选择并检查后批准。",
+      memoryRevisionConflict: "正式记忆已更新，这条修订基于旧版本。请基于最新内容重新提交修订；直接重试不会生效。",
+      approvedRefreshFailed: "已批准，但列表刷新失败，请刷新页面。",
+      candidateClosed: "这条内容已处理，请刷新待审队列。",
       unsaved: "有未保存的修改",
     },
     en: {
       workspace: "WORKSPACE",
       navMemory: "Memory",
-      musicTitle: "音乐库",
+      musicTitle: "Music",
       navReview: "Review",
       navImport: "Import",
+      navMaintenance: "Maintenance",
       localOnly: "Local only",
       localWorkspace: "LOCAL WORKSPACE",
       lockedTitle: "Session not open",
@@ -219,10 +225,13 @@
       visibleLabel: "Visible",
       searchCount: "items",
       fileInvalid: "Choose a .txt, .md, .json or .csv file.",
-      fileTooLarge: "File exceeds the 50000 character limit.",
+      fileTooLarge: "File exceeds the 10,000,000 character limit.",
       revokeSource: "Source",
       revokeMemory: "Memory",
       revisionConflict: "This candidate changed. Reopen and review it before approving.",
+      memoryRevisionConflict: "The memory has changed since this revision was proposed. Submit a revision based on the latest content; retrying will not resolve this conflict.",
+      approvedRefreshFailed: "Approved, but the list could not refresh. Refresh the page.",
+      candidateClosed: "This item has already been processed. Refresh the review queue.",
       unsaved: "Unsaved changes",
     },
   };
@@ -293,22 +302,24 @@
   const expandedTags = new Set(), pickerExpansion = new Map(), tagDrafts = new Map();
   const tr = (key) => dict[lang][key] || key;
   const text = (node, value) => {
-    node.textContent = value == null ? "" : String(value);
+    window.ShirosI18n.text(node, value == null ? "" : value);
   };
   function applyLanguage() {
+    window.ShirosI18n.setLocale(lang);
+    $("#queue-total").hidden = currentView !== "review";
     document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
     $$("[data-i18n]").forEach((el) => text(el, tr(el.dataset.i18n)));
     $$("[data-i18n-placeholder]").forEach((el) =>
-      el.setAttribute("placeholder", tr(el.dataset.i18nPlaceholder)),
+      window.ShirosI18n.attribute(el, "placeholder", tr(el.dataset.i18nPlaceholder)),
     );
-    $("#language-toggle").textContent = lang === "zh" ? "EN" : "中文";
-    $("#view-title").textContent = tr(
-      currentView === "music" ? "musicTitle" : currentView === "memory"
+    window.ShirosI18n.text($("#desktop-settings-open"), lang === "zh" ? ui("⚙ 设置") : "⚙ Settings");
+    window.ShirosI18n.text($("#view-title"), tr(
+      currentView === "knowledge" ? (lang === "zh" ? ui("维护") : "Maintenance") : currentView === "files" ? (lang === "zh" ? ui("文件库") : "Files") : currentView === "music" ? "musicTitle" : currentView === "memory"
         ? "memoryTitle"
         : currentView === "review"
           ? "reviewTitle"
           : currentView === "library" ? "libraryTitle" : "importTitle",
-    );
+    ));
   }
   function notice(message, info = false) {
     const el = $("#notice");
@@ -331,7 +342,7 @@
   const titleOf = (item) =>
     item.title ||
     item.label ||
-    (lang === "zh" ? "未命名内容" : "Untitled item");
+    (lang === "zh" ? ui("未命名内容") : "Untitled item");
   const contentOf = (item) =>
     item.text ?? item.content ?? item.normalized_text ?? item.body ?? "";
   function date(value) {
@@ -359,7 +370,7 @@
       throw Object.assign(new Error("permission.denied"), {
         code: "permission.denied",
       });
-    const response = await fetch(`/ui-api/${action}`, {
+    const response = await window.ShirosMotion.request(`/ui-api/${action}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Shiros-Token": token },
       body: JSON.stringify(payload),
@@ -378,6 +389,8 @@
   }
   function errorMessage(error, fallback = "actionFailed") {
     if (error.code === "candidate.revision_conflict") return tr("revisionConflict");
+    if (error.code === "memory.revision_conflict") return tr("memoryRevisionConflict");
+    if (error.code === "candidate.closed") return tr("candidateClosed");
     if (error.code === "permission.denied") {
       sessionStorage.removeItem("shiros-token");
       token = "";
@@ -522,8 +535,7 @@
   async function selectMemory(id, context = "memory") {
     const revision = ++detailRevision;
     const item = (context === "library" ? libraryItems : memories).find((m) => String(memoryId(m)) === String(id));
-    if (!item) return;
-    selectedMemory = { ...item, id };
+    selectedMemory = { ...(item || {}), id };
     if (context === "library") renderLibraryList(); else renderMemoryList();
     const panel = $(`#${context}-detail`);
     panel.setAttribute("aria-busy", "true");
@@ -561,7 +573,7 @@
       meta.className = "meta-grid";
       meta.append(
         createMeta(tr("created"), date(memory.created_at)),
-        createMeta(lang === "zh" ? "版本" : "Revision", memory.revision),
+        createMeta(lang === "zh" ? ui("版本") : "Revision", memory.revision),
         createMeta(tr("source"), data.source?.title || memory.provenance?.source_id || "—"),
         createMeta(
           tr("status"),
@@ -604,9 +616,9 @@
             tr("created"),
             date(provenance.observed_at || source.created_at),
           ),
-          createMeta(lang === "zh" ? "证据等级" : "Evidence level",
-            provenance.level === "explicit_statement" ? (lang === "zh" ? "明确陈述 · 未验证" : "Explicit statement · Unverified") : provenance.level),
-          createMeta(lang === "zh" ? "记录者" : "Recorded by", provenance.created_by),
+          createMeta(lang === "zh" ? ui("证据等级") : "Evidence level",
+            provenance.level === "explicit_statement" ? (lang === "zh" ? ui("明确陈述 · 未验证") : "Explicit statement · Unverified") : provenance.level),
+          createMeta(lang === "zh" ? ui("记录者") : "Recorded by", provenance.created_by),
         );
         panel.append(sourceMeta);
         if (source.safe_text || source.text)
@@ -693,7 +705,7 @@
       edit.className = "review-edit";
       edit.id = "candidate-edit";
       edit.value = contentOf(candidate);
-      edit.setAttribute("aria-label", tr("editedContent"));
+      window.ShirosI18n.attribute(edit, "aria-label", tr("editedContent"));
       const label = document.createElement("label");
       label.className = "edit-label";
       label.htmlFor = "candidate-edit";
@@ -756,7 +768,10 @@
                 await api("approve", { id, revision: candidate.revision });
                 toast(tr("approvedSuccess"));
                 selectedCandidate = null;
-                await Promise.all([refreshMemory(), loadQueue()]);
+                $("#review-detail").replaceChildren();
+                const refreshed = await Promise.allSettled([refreshMemory(), loadQueue()]);
+                if (refreshed.some((result) => result.status === "rejected"))
+                  toast(tr("approvedRefreshFailed"));
               },
             ),
         },
@@ -764,7 +779,7 @@
       panel.replaceChildren(detailHeader(candidate, actions));
       const metadata = document.createElement("p");
       metadata.className = "edit-label";
-      text(metadata, `${tr("source")}: ${data.source?.origin || "unknown"} | ${tr("evidenceLevel")}: ${candidate.suggested_fact_level || "unknown"}`);
+      text(metadata, ui("{0}: {1} | {2}: {3}", tr("source"), data.source?.origin || "unknown", tr("evidenceLevel"), candidate.suggested_fact_level || "unknown"));
       panel.append(metadata);
       if (targetEdit) {
         const target = document.createElement("div");
@@ -808,7 +823,7 @@
         try {
           const payload = { id, text: edit.value };
           if (targetEdit) {
-            payload.title = titleInput.value;
+            window.ShirosI18n.attribute(payload, 'title', titleInput.value);
             payload.sources = parseSources();
           }
           const updated = await api("edit", payload);
@@ -869,8 +884,15 @@
       panel.removeAttribute("aria-busy");
     }
   }
+  const viewVisits=new Map();
   function showView(name) {
+    if(currentView===name&&viewVisits.has(name))return;
+    if (currentView === "music" && name !== "music") {
+      document.dispatchEvent(new Event("shiros-music-close"));
+    }
+    const recent=Date.now()-(viewVisits.get(name)||0)<15000;if(!recent)viewVisits.set(name,Date.now());
     currentView = name;
+    $("#queue-total").hidden = name !== "review";
     clearNotice();
     $$(".view").forEach((v) =>
       v.classList.toggle("hidden", v.id !== `${name}-view`),
@@ -879,27 +901,32 @@
       b.classList.toggle("active", b.dataset.view === name ||
         (name === "library" && b.dataset.view === "memory")),
     );
-    $("#view-title").textContent = tr(
+    window.ShirosI18n.text($("#view-title"), tr(
       name === "memory"
         ? "memoryTitle"
         : name === "review"
           ? "reviewTitle"
           : name === "library" ? "libraryTitle" : "importTitle",
-    );
+    ));
+    window.ShirosMotion.enter(document.getElementById(`${name}-view`));
     $(".sidebar").classList.remove("open");
     if (name === "music") {
-      $("#view-title").textContent = "音乐库";
+      window.ShirosI18n.text($("#view-title"), tr("musicTitle"));
       document.dispatchEvent(new Event("shiros-music-open"));
     }
     if (name === "files") {
-      $("#view-title").textContent = "文件库";
-      document.dispatchEvent(new Event("shiros-files-open"));
+      window.ShirosI18n.text($("#view-title"), lang === "zh" ? ui("文件库") : "Files");
+      if(!recent)document.dispatchEvent(new Event("shiros-files-open"));
     }
-    if (name === "memory")
-      refreshMemory().catch((e) => notice(errorMessage(e, "loadFailed")));
-    if (name === "review")
+    if (name === "knowledge") {
+      window.ShirosI18n.text($("#view-title"), lang === "zh" ? ui("维护") : "Maintenance");
+      if(!recent)document.dispatchEvent(new Event("shiros-knowledge-open"));
+    }
+    if (name === "memory"&&!recent)
+      return refreshMemory().catch((e) => notice(errorMessage(e, "loadFailed")));
+    if (name === "review"&&!recent)
       loadQueue().catch((e) => notice(errorMessage(e, "loadFailed")));
-    if (name === "library")
+    if (name === "library"&&!recent)
       loadTags().then(loadLibrary).then(() => {
         if (currentView === "library" && selectedMemory && libraryItems.some((item) =>
           String(memoryId(item)) === String(selectedMemory.id)))
@@ -927,6 +954,10 @@
     const matching = matchingTags(query);
     tree.classList.toggle("hidden", libraryMode !== "tags");
     $("#tag-filter").classList.toggle("hidden", libraryMode !== "tags");
+    $("#library-tag-nav").classList.toggle("hidden", libraryMode !== "tags");
+    $(".library-layout").classList.toggle("library-tags-mode", libraryMode === "tags");
+    $("#memory-untagged").classList.toggle("selected", libraryTag === "__none__");
+    $("#memory-untagged").setAttribute("aria-pressed", String(libraryTag === "__none__"));
     tree.replaceChildren();
     const seen = new Set();
     function append(parent, target) {
@@ -940,8 +971,8 @@
         select.type = "button";
         select.className = `tag-select${libraryTag === tag.id ? " selected" : ""}`;
         select.setAttribute("aria-pressed", String(libraryTag === tag.id));
-        text(select, tag.name);
-        select.title = tagPath(tag);
+        const icon=document.createElement("span");icon.className="library-tag-icon";icon.setAttribute("aria-hidden","true");const caption=document.createElement("span");caption.className="library-tag-name";text(caption,tag.name);select.append(icon,caption);
+        window.ShirosI18n.attribute(select, 'title', tagPath(tag));
         select.addEventListener("click", () => {
           libraryTag = tag.id;
           libraryOffset = 0;
@@ -955,9 +986,9 @@
         const toggle = document.createElement("button");
         toggle.type = "button";
         toggle.className = "tag-toggle";
-        text(toggle, hasChildren ? expanded ? "▾" : "▸" : "·");
+        text(toggle, hasChildren ? expanded ? "▾" : "▸" : "");
         toggle.disabled = !hasChildren;
-        toggle.setAttribute("aria-label", tag.name);
+        window.ShirosI18n.attribute(toggle, "aria-label", ui("展开或收起 {0}",tag.name));
         if (hasChildren) toggle.setAttribute("aria-expanded", String(expanded));
         toggle.addEventListener("click", () => {
           const collapsed = children.classList.toggle("hidden");
@@ -975,6 +1006,8 @@
     else if (!tree.childElementCount) emptyList(tree, tr("noTagMatch"), "");
     tree.scrollTop = scroll;
   }
+  $("#memory-tags-expand").addEventListener("click",()=>{for(const tag of tags)if(tags.some(child=>child.parent_id===tag.id))expandedTags.add(tag.id);renderTagTree();});
+  $("#memory-tags-collapse").addEventListener("click",()=>{expandedTags.clear();$("#tag-search").value="";renderTagTree();});
   function matchingTags(query) {
     const matching = new Set();
     for (const tag of tags) {
@@ -1015,21 +1048,21 @@
     const search = document.createElement("input");
     search.type = "search";
     search.className = "text-input tag-picker-search";
-    search.placeholder = tr("findTags");
-    search.setAttribute("aria-label", tr("findTags"));
+    window.ShirosI18n.attribute(search, 'placeholder', tr("findTags"));
+    window.ShirosI18n.attribute(search, "aria-label", tr("findTags"));
     const summary = document.createElement("div");
     summary.className = "tag-selection-summary";
     const picked = document.createElement("div");
     picked.className = "tag-picked";
     function updateSummary() {
-      text(summary, `${tr("selectedTags")} · ${selected.size} / 30`);
+      text(summary, ui("{0} · {1} / 30", tr("selectedTags"), selected.size));
       picked.replaceChildren();
       for (const tagId of selected) {
         const tag = tags.find((t) => t.id === tagId);
         const chip = document.createElement("button");
         chip.type = "button"; chip.className = "tag-chip";
-        text(chip, `${tagPath(tag)} ×`);
-        chip.title = `${tr("removeTagSelection")} ${tagPath(tag)}`;
+        text(chip, ui("{0} ×", tagPath(tag)));
+        window.ShirosI18n.attribute(chip, 'title', ui("{0} {1}", tr("removeTagSelection"), tagPath(tag)));
         chip.addEventListener("click", () => { selected.delete(tagId); tagDrafts.set(id, selected); renderChoices(); });
         picked.append(chip);
       }
@@ -1051,14 +1084,14 @@
           const toggle = document.createElement("button");
           toggle.type = "button"; toggle.className = "tag-toggle"; toggle.disabled = !hasChildren;
           text(toggle, hasChildren ? open ? "▾" : "▸" : "·");
-          toggle.setAttribute("aria-label", tag.name);
+          window.ShirosI18n.attribute(toggle, "aria-label", tag.name);
           if (hasChildren) toggle.setAttribute("aria-expanded", String(open));
           toggle.addEventListener("click", () => {
             const collapsed = children.classList.toggle("hidden");
             if (collapsed) expanded.delete(tag.id); else expanded.add(tag.id);
             text(toggle, collapsed ? "▸" : "▾"); toggle.setAttribute("aria-expanded", String(!collapsed));
           });
-          const label = document.createElement("label"); label.title = tagPath(tag);
+          const label = document.createElement("label"); window.ShirosI18n.attribute(label, 'title', tagPath(tag));
           const checkbox = document.createElement("input");
           checkbox.type = "checkbox"; checkbox.value = tag.id; checkbox.checked = selected.has(tag.id);
           checkbox.addEventListener("change", () => {
@@ -1079,7 +1112,7 @@
     renderChoices();
     const actions = document.createElement("div");
     actions.className = "tag-actions";
-    const noTagsButton=document.createElement('button');noTagsButton.type='button';noTagsButton.className='secondary-button';text(noTagsButton,'无标签');noTagsButton.addEventListener('click',()=>{selected.clear();tagDrafts.set(id,selected);renderChoices();});actions.append(noTagsButton);
+    const noTagsButton=document.createElement('button');noTagsButton.type='button';noTagsButton.className='secondary-button';text(noTagsButton,ui("无标签"));noTagsButton.addEventListener('click',()=>{selected.clear();tagDrafts.set(id,selected);renderChoices();});actions.append(noTagsButton);
     const save = document.createElement("button");
     save.className = "secondary-button";
     save.type = "button";
@@ -1132,7 +1165,10 @@
   async function loadLibrary() {
     const revision = ++libraryRevision;
     const selectedTag = tags.find((tag) => tag.id === libraryTag);
-    text($("#library-location"), libraryMode === "tags" ? libraryTag === "__none__" ? "无标签" : selectedTag ? `${tagPath(selectedTag)} · ${tr("includesChildren")}` : tr("chooseTag") : tr("allMemories"));
+    const location=$("#library-location");location.replaceChildren();
+    const title=document.createElement("strong");text(title,libraryMode==="date"?tr("allMemories"):libraryTag==="__none__"?ui("无标签"):selectedTag?.name||ui("标签分组"));
+    if(selectedTag?.parent_id){const path=document.createElement("small");path.className="library-parent-path";text(path,tagPath(tags.find(tag=>tag.id===selectedTag.parent_id)));location.append(path);}
+    const scope=document.createElement("small");text(scope,libraryMode==="date"?tr("byDate"):selectedTag?tr("includesChildren"):libraryTag==="__none__"?ui("尚未分配标签的记忆"):ui("选择左侧标签查看记忆"));location.append(title,scope);
     renderTagTree();
     const data = libraryMode === "tags" && !libraryTag ? {items: [], total: 0} :
       await api("library", { tag_id: libraryMode === "tags" && libraryTag !== "__none__" ? libraryTag : null, untagged: libraryMode === "tags" && libraryTag === "__none__", offset: libraryOffset, limit: libraryLimit });
@@ -1141,12 +1177,12 @@
     libraryTotal = data.total || 0;
     if (libraryMode === "date") renderStats({ memories: libraryTotal });
     renderLibraryList();
-    text($("#library-result-meta"), `${libraryTotal} ${tr("searchCount")}`);
-    text($("#library-page"), `${libraryTotal ? libraryOffset + 1 : 0}–${Math.min(libraryOffset + libraryItems.length, libraryTotal)} / ${libraryTotal}`);
+    text($("#library-result-meta"), libraryTotal===1?ui("1 条记忆"):ui("{0} 条记忆",libraryTotal));
+    text($("#library-page"), ui("{0}–{1} / {2}", libraryTotal ? libraryOffset + 1 : 0, Math.min(libraryOffset + libraryItems.length, libraryTotal), libraryTotal));
     $("#library-prev").disabled = libraryOffset === 0;
     $("#library-next").disabled = libraryOffset + libraryLimit >= libraryTotal;
     if (!libraryItems.some((item) => String(memoryId(item)) === String(selectedMemory?.id)))
-      $("#library-detail").replaceChildren();
+      emptyList($("#library-detail"),tr("selectMemory"),tr("selectMemorySub"));
   }
   function populateTagForm() {
     const id = $("#tag-existing").value;
@@ -1160,14 +1196,7 @@
     $("#tag-parent").value = tag?.parent_id || "";
     text($("#tag-error"), "");
   }
-  async function openTagDialog() {
-    try {
-      await loadTags();
-      $("#tag-existing").replaceChildren(new Option(tr("newTag"), ""), ...tags.map((tag) => new Option(tagPath(tag), tag.id)));
-      populateTagForm();
-      $("#tag-dialog").showModal();
-    } catch (e) { notice(errorMessage(e)); }
-  }
+  async function openTagDialog(){try{await window.ShirosTagManager.open({sections:[{id:'memory',name:ui("记忆标签")}],list:async()=> (await api('tags')).items,save:async({current,name,parent_id})=>{const result=await api(current?'tag-update':'tag-create',{...(current?{id:current.id}:{}),name,parent_id});return result.tag||result;},remove:async node=>{try{return await api('tag-delete',{id:node.id});}catch(e){throw new Error(e.code==='tag.has_children'?ui("请先移动或删除下级标签。"):e.code==='permission.denied'?ui("当前身份不能删除标签。"):ui("删除未完成，请重新打开后再试。"));}},changed:async()=>{await loadTags();if(libraryTag&&!tags.some(t=>t.id===libraryTag))libraryTag=null;await loadLibrary();}});}catch(e){notice(errorMessage(e));}}
   $("#manage-tags").addEventListener("click", openTagDialog);
   $("#tag-dialog-close").addEventListener("click", () => $("#tag-dialog").close());
   $("#tag-existing").addEventListener("change", populateTagForm);
@@ -1228,7 +1257,7 @@
     );
   }
   function countChars() {
-    text($("#char-count"), `${$("#import-text").value.length} / 50000`);
+    text($("#char-count"), ui("{0} / 10,000,000", $("#import-text").value.length.toLocaleString()));
     $("#stage-button").disabled = !previewId;
   }
   function importKind(file) {
@@ -1252,11 +1281,11 @@
     const stats = document.createElement("div");
     stats.className = "preview-stats";
     const a = document.createElement("span");
-    text(a, `${safe.length} ${tr("chars")}`);
+    text(a, ui("{0} {1}", safe.length, tr("chars")));
     const b = document.createElement("span");
     text(
       b,
-      `${tr("privacySafe")}: ${data.privacy?.persistence_allowed === false ? tr("blocked") : tr("allowed")}`,
+      ui("{0}: {1}", tr("privacySafe"), data.privacy?.persistence_allowed === false ? tr("blocked") : tr("allowed")),
     );
     stats.append(a, b);
     body.append(stats);
@@ -1313,7 +1342,7 @@
       previewId = null;
       $("#import-title").value = "";
       $("#import-text").value = "";
-      $("#file-name").textContent = "";
+      window.ShirosI18n.text($("#file-name"), "");
       $("#import-file").value = "";
       $("#preview-body").replaceChildren();
       const p = document.createElement("p");
@@ -1329,8 +1358,9 @@
       button.disabled = false;
     }
   }
-  $("#language-toggle").addEventListener("click", () => {
-    lang = lang === "zh" ? "en" : "zh";
+  document.addEventListener("shiros-language-select", (event) => {
+    if (!["zh", "en"].includes(event.detail?.language)) return;
+    lang = event.detail.language;
     localStorage.setItem("shiros-locale", lang);
     applyLanguage();
     renderMemoryList();
@@ -1357,9 +1387,11 @@
     $("#memory-search").value = "";
     showView("memory");
   });
-  $("#mobile-nav-toggle").addEventListener("click", () =>
-    $(".sidebar").classList.toggle("open"),
-  );
+  $("#choose-import-file").addEventListener("click", () => $("#import-file").click());
+  const navToggle=$('#mobile-nav-toggle');$('.crumb').prepend(navToggle);
+  function updateSidebar(){const hidden=document.body.classList.contains('sidebar-hidden');window.ShirosI18n.attribute(navToggle, 'aria-label', hidden?ui("显示工作区侧栏"):ui("隐藏工作区侧栏"));window.ShirosI18n.attribute(navToggle, 'title', hidden?ui("显示工作区侧栏"):ui("隐藏工作区侧栏"));navToggle.setAttribute('aria-expanded',String(!hidden));$('.sidebar').inert=innerWidth>650&&hidden;}
+  try{document.body.classList.toggle('sidebar-hidden',localStorage.getItem('shiros-sidebar-hidden')==='true');}catch(e){}updateSidebar();
+  navToggle.addEventListener('click',()=>{if(innerWidth<=650){$('.sidebar').classList.toggle('open');navToggle.setAttribute('aria-expanded',String($('.sidebar').classList.contains('open')));}else{document.body.classList.toggle('sidebar-hidden');try{localStorage.setItem('shiros-sidebar-hidden',String(document.body.classList.contains('sidebar-hidden')));}catch(e){}updateSidebar();}});window.addEventListener('resize',updateSidebar);
   $("#memory-search").addEventListener("input", () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(
@@ -1378,7 +1410,7 @@
         "I prefer clear, direct writing. Technical explanations should lead with the conclusion, then add the context needed to act. Keep lists concise and avoid repeating information.";
     }
     previewId = null;
-    $("#preview-state").textContent = tr("notPreviewed");
+    window.ShirosI18n.text($("#preview-state"), tr("notPreviewed"));
     text($("#file-name"), "");
     $("#import-file").value = "";
     countChars();
@@ -1401,7 +1433,7 @@
       event.target.value = "";
       return;
     }
-    if (file.size > 65536) {
+    if (file.size > 40000000) {
       toast(tr("fileTooLarge"));
       event.target.value = "";
       return;
@@ -1409,7 +1441,7 @@
     try {
       const bytes = await file.arrayBuffer();
       const content = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-      if (content.length > 50000) {
+      if (content.length > 10000000) {
         toast(tr("fileTooLarge"));
         event.target.value = "";
         return;
@@ -1436,6 +1468,7 @@
     if (event.key === "Escape") $(".sidebar").classList.remove("open");
   });
   applyLanguage();
+  document.addEventListener('shiros-open-memory',async event=>{if(!event.detail?.id)return;await showView('memory');selectMemory(event.detail.id,'memory').catch(e=>notice(errorMessage(e)));});
   countChars();
   loadSession().then(() =>
     refreshMemory().catch((e) => notice(errorMessage(e, "loadFailed"))),

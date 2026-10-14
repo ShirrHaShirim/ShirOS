@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#205749"/><text x="32" y="43" text-anchor="middle" font-family="Georgia,serif" font-size="36" fill="#fff">S</text><circle cx="49" cy="16" r="4" fill="#f08c78"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="ink" x2="1" y2="1"><stop stop-color="#263c51"/><stop offset="1" stop-color="#101923"/></linearGradient>
+    <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#fff0bd"/><stop offset="1" stop-color="#cda66e"/></linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#ink)"/>
+  <circle cx="256" cy="256" r="181" fill="none" stroke="#a98862" stroke-opacity=".28" stroke-width="2"/>
+  <path d="M 331 157 C 265 113 170 146 173 210 C 176 251 229 255 266 270 C 327 295 349 335 305 367 C 268 394 211 383 181 357" fill="none" stroke="url(#gold)" stroke-width="30" stroke-linecap="round"/>
+  <path d="M 368 99 L 376 121 L 398 129 L 376 137 L 368 159 L 360 137 L 338 129 L 360 121 Z" fill="#f7e4ad"/>
+  <path d="M 114 279 L 114 324 M 133 268 L 133 335 M 152 286 L 152 317" stroke="#b2d0cd" stroke-width="7" stroke-linecap="round"/>
+</svg>

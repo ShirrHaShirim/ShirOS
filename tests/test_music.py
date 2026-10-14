@@ -27,6 +27,14 @@ def run(s: MusicService, action: str, **data: object) -> dict[str, object]:
     return s.run(action, MusicRequest.model_validate(data))
 
 
+def release_fixture(s: MusicService, **fields: object) -> dict[str, object]:
+    """Build an explicitly synthetic recording credit for a release test fixture."""
+    recording = s.run("save", MusicRequest(object={"kind": "recording", "title": "Fixture Audio"}))[
+        "item"
+    ]
+    return {**fields, "relations": [{"object_id": recording["id"], "role": "recording"}]}
+
+
 def test_douban_parser_requires_identity_and_preserves_unknown_rating() -> None:
     rows = parse_douban("douban_id,title,status,rating\n12345678,合成专辑,想听,\n", "csv")
     assert rows[0]["rating"] is None
@@ -85,7 +93,7 @@ def test_music_relations_reviews_memberships_and_history(db_engine: Engine, tmp_
                 },
             ),
         )
-    tag = s.run("taxonomy-save", MusicRequest(name="合成古典",namespace="tag"))["node"]
+    tag = s.run("taxonomy-save", MusicRequest(name="合成古典", namespace="tag"))["node"]
     item = s.run(
         "save",
         MusicRequest(
@@ -129,7 +137,7 @@ def test_music_relations_reviews_memberships_and_history(db_engine: Engine, tmp_
     assert s.run("list", MusicRequest(view="featured"))["total"] == 1
     previous = item["revision"]
     item = s.run("review", MusicRequest(id=identifier, revision=previous, rating=3))["item"]
-    assert s.run("list", MusicRequest(view="featured"))["total"] == 0
+    assert s.run("list", MusicRequest(view="featured"))["total"] == 1
     assert s.run("list", MusicRequest(view="five-star"))["total"] == 0
     assert s.run("list", MusicRequest(view="frequent"))["total"] == 1
     assert len(item["reviews"]) == 2
@@ -188,7 +196,7 @@ def test_music_import_all_states_idempotence_and_manual_override(
 def test_music_permission_scope_and_transaction_rollback(db_engine: Engine, tmp_path: Path) -> None:
     s = service(db_engine, tmp_path)
     foreign = service(db_engine, tmp_path)
-    obj = foreign.run("save", MusicRequest(object={"title": "外部合成"}))["item"]
+    obj = foreign.run("save", MusicRequest(object={"title": "外部合成", "kind": "work"}))["item"]
     with pytest.raises(ValueError, match="music.not_found"):
         s.run("detail", MusicRequest(id=obj["id"]))
     with pytest.raises(ValueError, match="music.not_found"):
@@ -211,7 +219,7 @@ def test_music_permission_scope_and_transaction_rollback(db_engine: Engine, tmp_
 @pytest.mark.integration
 async def test_music_listening_sources_and_mcp(db_engine: Engine, tmp_path: Path) -> None:
     s = service(db_engine, tmp_path)
-    item = s.run("save", MusicRequest(object={"title": "合成聆听专辑"}))["item"]
+    item = s.run("save", MusicRequest(object=release_fixture(s, title="合成聆听专辑")))["item"]
     identifier = item["id"]
     with pytest.raises(ValueError, match="invalid_url"):
         s.run(
@@ -271,9 +279,18 @@ def test_music_browser_guard_and_real_api(db_engine: Engine, tmp_path: Path) -> 
         assert client.post("/ui-api/music/list", json={}).status_code == 403
         client.headers["X-Shiros-Token"] = "synthetic-token"
         assert client.post("/ui-api/music/list", json={"scope": str(uuid4())}).status_code == 422
+        recording = client.post(
+            "/ui-api/music/save", json={"object": {"title": "合成网页录音", "kind": "recording"}}
+        ).json()["item"]
         assert (
             client.post(
-                "/ui-api/music/save", json={"object": {"title": "合成网页专辑"}}
+                "/ui-api/music/save",
+                json={
+                    "object": {
+                        "title": "合成网页专辑",
+                        "relations": [{"object_id": recording["id"], "role": "recording"}],
+                    }
+                },
             ).status_code
             == 200
         )

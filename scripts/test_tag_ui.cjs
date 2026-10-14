@@ -29,10 +29,12 @@ class Element {
 }
 
 const nodes = Object.fromEntries(
-  ["#tag-tree", "#tag-filter", "#tag-search", "#memory-untagged"].map((id) => [id, new Element()]),
+  ["#tag-tree", "#tag-filter", "#tag-search", "#memory-untagged", "#library-tag-nav", ".library-layout", "#memory-tags-expand", "#memory-tags-collapse"].map((id) => [id, new Element()]),
 );
 const context = {
   document: { createElement: () => new Element() },
+  window: { ShirosI18n: {attribute: (node,name,value)=>node.setAttribute(name,String(value)),text: (node,value)=>{node.textContent=String(value);} } },
+  ui: (source,...values)=>source.replace(/\{(\d+)\}/g,(_,i)=>String(values[Number(i)])),
   $: (selector) => nodes[selector],
   text: (element, value) => { element.textContent = value; },
   tr: (key) => key,

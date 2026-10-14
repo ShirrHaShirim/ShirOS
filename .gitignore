@@ -13,3 +13,10 @@ build/
 *.log
 MemForDeepseek/
 
+
+# Generated plugin distributions and owner-specific maintenance inputs
+desktop/plugin-packages/
+docs/music-*.json
+opencode.json
+# Local deployment handoff
+prompt.txt

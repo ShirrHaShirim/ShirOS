@@ -185,7 +185,7 @@ class RetrievalService:
             "WHEN position(lower(:query) in lower(m.text || ' ' || "
             "coalesce(md.title,s.title,''))) > 0 THEN 1.0 "
             "ELSE GREATEST(LEAST(1.0,ts_rank_cd(to_tsvector('simple',"
-            "m.text || ' ' || coalesce(md.title,s.title,'')),"
+            "left(m.text,100000) || ' ' || coalesce(md.title,s.title,'')),"
             f"plainto_tsquery('simple',:query))), {coverage}) END"
         )
         score = {

@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image, PngImagePlugin
 from sqlalchemy import Engine
-from test_music import service
+from test_music import release_fixture, service
 from test_review_workflow import setup
 
 from shiros.apps.workbench import create_workbench
@@ -45,16 +45,19 @@ def test_music_taxonomy_independence_subtree_and_untagged(
     root = s.run("taxonomy-save", MusicRequest(name="音乐", namespace="tag"))["node"]
     child = s.run("taxonomy-save", MusicRequest(name="合成收藏", parent_id=root["id"]))["node"]
     genre = s.run("taxonomy-save", MusicRequest(name="音乐", namespace="genre"))["node"]
-    item = s.run("save", MusicRequest(object={"title": "合成有标签", "tag_ids": [child["id"]]}))[
-        "item"
-    ]
+    item = s.run(
+        "save", MusicRequest(object=release_fixture(s, title="合成有标签", tag_ids=[child["id"]]))
+    )["item"]
     genre_only = s.run(
-        "save", MusicRequest(object={"title": "合成只有风格", "genre_ids": [genre["id"]]})
+        "save",
+        MusicRequest(object={"kind": "work", "title": "合成只有风格", "genre_ids": [genre["id"]]}),
     )["item"]
     assert genre_only["tags"] == [] and len(genre_only["genres"]) == 1
-    assert s.run("list", MusicRequest(untagged=True))["total"] == 1
+    assert s.run("list", MusicRequest(kind="work", untagged=True))["total"] == 1
     assert s.run("list", MusicRequest(tag_id=root["id"]))["total"] == 1
-    assert s.run("list", MusicRequest(genre_id=genre["id"], untagged=True))["total"] == 1
+    assert (
+        s.run("list", MusicRequest(kind="work", genre_id=genre["id"], untagged=True))["total"] == 1
+    )
     for obj in [
         {"title": "不应接受记忆标签", "tag_ids": [memory_tag["id"]]},
         {"title": "不应把 Genre 当私人标签", "tag_ids": [genre["id"]]},
@@ -76,10 +79,18 @@ def test_music_taxonomy_independence_subtree_and_untagged(
     item = s.run(
         "save",
         MusicRequest(
-            id=item["id"], revision=item["revision"], object={"title": item["title"], "tag_ids": []}
+            id=item["id"],
+            revision=item["revision"],
+            object={
+                "title": item["title"],
+                "tag_ids": [],
+                "relations": [
+                    {"object_id": r["object_id"], "role": r["role"]} for r in item["relations"]
+                ],
+            },
         ),
     )["item"]
-    assert item["tags"] == [] and s.run("list", MusicRequest(untagged=True))["total"] == 2
+    assert item["tags"] == [] and s.run("list", MusicRequest(untagged=True))["total"] == 1
 
 
 @pytest.mark.integration
@@ -87,7 +98,7 @@ def test_genre_bootstrap_is_once_and_preserves_edits(db_engine: Engine, tmp_path
     s = service(db_engine, tmp_path)
     root = s.run("taxonomy-save", MusicRequest(name="古典", namespace="genre"))["node"]
     initial = s.run("taxonomy-seed", MusicRequest())["items"]
-    assert all(node["namespace"] == "genre" for node in initial)
+    assert {node["namespace"] for node in initial} == {"genre", "identity"}
     s.run(
         "taxonomy-save", MusicRequest(id=root["id"], revision=1, name="古典音乐", namespace="genre")
     )
@@ -134,7 +145,7 @@ def test_image_http_boundary_and_reader_denial(db_engine: Engine, tmp_path: Path
     with db_engine.connect() as c:
         actor = workflow.identity.current(c)
     s = MusicService(db_engine, actor, scope)
-    item = s.run("save", MusicRequest(object={"title": "合成封面"}))["item"]
+    item = s.run("save", MusicRequest(object=release_fixture(s, title="合成封面")))["item"]
     app = create_workbench(db_engine, workflow.identity, scope, token="synthetic-image-token")
     with TestClient(app, base_url="http://127.0.0.1:8001") as client:
         client.headers["X-Shiros-Token"] = "synthetic-image-token"

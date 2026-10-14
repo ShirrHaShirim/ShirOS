@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import Field
 
 from shiros.core.schemas import Record, Schema
+from shiros.memory_limits import MAX_MEMORY_CHARS
 
 
 class AuthMethod(StrEnum):
@@ -40,7 +41,7 @@ class Message(Record):
 class SendMessageRequest(Schema):
     conversation_id: UUID
     request_id: UUID
-    content: str = Field(min_length=1, max_length=100_000)
+    content: str = Field(min_length=1, max_length=MAX_MEMORY_CHARS)
 
 
 class StreamChunk(Schema):

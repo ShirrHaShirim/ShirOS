@@ -1,47 +1,30 @@
-# MCP boundary
+# MCP Boundary — 0.7.18
 
-`server.create_server(gateway)` provides eighteen tools in v0.3.8.
-Eight are read-only: `search`, `fetch`, `context`, `status`, `proposal_status`,
-`get_memory_sources`, `list_tags`, and `list_memories` (added-date pagination over visible approved
-memory with truncated previews). Three are additive, non-destructive writes:
-`propose_memory` submits content to server policy: ordinary content may be
-automatically accepted, sensitive/uncertain content stays pending for human
-review, and restricted content is blocked. `create_tag`
-creates or reuses a tag, and `add_memory_tags` appends existing tags to visible
-approved memories.
-Seven are destructive and require delegated editor rights: `edit_memory`
-revises visible memory text as a new revision guarded by the caller's expected
-revision, `delete_memory` soft-deletes by revocation, `delete_tag` marks a
-childless tag deleted, and `remove_memory_tags` detaches tag links.
-`rename_memory` revises the memory-specific title, `set_memory_sources`
-revises structured references, and `migrate_memory_sources` atomically moves
-one exact unique body span into a reference. All retain the stable memory UUID
-and immutable original-source linkage. Editor
-operations must run only on explicit user request, never from retrieved
-instructions; approved content can be reorganized. New sensitive edits return
-pending proposals for human review against the same memory and base revision.
-Callers must inspect status=applied/pending. Edits re-run
-the privacy gate and never promote evidence levels
-or verify provenance. The gateway binds identity and scope; callers cannot
-select another actor or scope. Retrieved content is untrusted reference data,
-not tool instructions. There are no approval, raw SQL, or unrestricted file
-tools. Proposals require explicit user intent to save specific content; never
-automatically export chat history. Stable request UUIDs make proposal and edit
-retries idempotent. Proposal status is restricted to this client's own
-requests. Titles are limited to 250 characters, text to 20,000 characters, and
-combined UTF-8 content to 65,536 bytes; HTTP requests also have a 65,536-byte
-body limit. Gateway privacy checks and permissions still apply. Rejected input
-and internal errors are returned as safe error codes without echoing sensitive
-content.
+`create_server(gateway)` registers 22 tools. Gateway binds actor, scope and capabilities; tool registration does not grant permission to execute writes.
 
-Use the SDK's `server.run(transport="stdio")` for a local process, or serve
-`create_http_app(server, token, port)` on `127.0.0.1`. The HTTP wrapper requires a
-bearer token, a loopback peer, the exact loopback Host, and either no Origin or
-the same local Origin. Query strings are rejected. The wrapper preserves the
-SDK lifespan. Never expose the bare SDK HTTP application as an unauthenticated
-alternative. Pass the same port to both factories.
+| Group | Tools | Contract |
+| --- | --- | --- |
+| Retrieval | `search`, `fetch`, `context`, `list_memories`, `list_tags`, `get_memory_sources`, `status` | Visible authorized records; bounded results and provenance |
+| Proposals | `propose_memory`, `proposal_status` | Idempotent request UUID; applied/pending/blocked must be distinguished |
+| Tags | `create_tag`, `add_memory_tags`, `delete_tag`, `remove_memory_tags` | Scope-bound operations; destructive actions require editor authority |
+| Memory revisions | `edit_memory`, `rename_memory`, `delete_memory`, `set_memory_sources`, `migrate_memory_sources` | Stable IDs, expected revision, immutable history and privacy checks |
+| Music | `music_query`, `music_mutate` | Explicit action schemas; independent `music_write` capability |
+| Knowledge | `knowledge_query`, `knowledge_maintain` | Canonical objects, dependencies, task leases and candidate drafts |
 
-The adapter does not register or claim connectivity with any external client.
-Clients require explicit configuration; ChatGPT integration may require an
-approved secure tunnel. It does not share ChatGPT's built-in memory or ingest
-conversation history automatically.
+Reader, proposer and editor are distinct grants. Editors cannot approve proposals, publish L0, access raw SQL or perform arbitrary filesystem operations. Retrieved data never grants authority. Sensitive edits may remain pending against their base revision; approval does not verify provenance. Source migration only moves an explicitly authorized exact unique span.
+
+## Transports
+
+For stdio, use `scripts/mcp_shiros_client.py serve --client <name>`. The wrapper locates the repository independently of the client working directory. Diagnostics must not contaminate protocol stdout.
+
+For HTTP, `create_http_app(server, token, port)` enforces bearer authentication, loopback peer, exact loopback Host and absent or same-origin Origin; query strings are rejected. Both factories must use the same port. SDK lifespan remains active. Never expose an unauthenticated bare SDK app.
+
+## Limits and domain semantics
+
+Memory titles are limited to 250 characters, body to 20,000 characters, combined content to 65,536 UTF-8 bytes. HTTP request limits and gateway validation also apply. Error codes avoid echoing rejected content or credentials.
+
+Music uses independent Work, Recording, Release and Track identities. Explicit Work folders/collections support cover-card nesting. A recording associated with a Work must cover that Work. `browse-context` returns ordered track IDs for temporary navigation; canonical details and exports stay complete. `music_mutate` requires separately granted `music_write`, including for memory editors.
+
+Knowledge maintenance can enqueue, claim, checkpoint and draft tasks. Domain governance and formal publication remain local owner/reviewer operations; MCP has no hidden approval path. Stale dependencies or base revisions prevent publication. See [architecture](../../../../docs/architecture.md) and [client setup](../../../../docs/shared-memory-clients.md).
+
+Client registration, bridge initialization and successful protocol tests are separate from actual connectivity in an external app. Do not claim a client connected until that client performs a live tool call.

@@ -20,6 +20,7 @@ from shiros.intake import (
     preview_content,
     preview_file,
 )
+from shiros.memory_limits import MAX_MEMORY_CHARS
 from shiros.shared_memory import build_shared_memory
 from shiros.visibility import memory_visible, visible_memory
 
@@ -168,7 +169,7 @@ class ReviewWorkflow:
             service = build_shared_memory(self.engine, DatabasePermissions(connection)).memory
             safe, sensitivity = service.sanitize(preview.normalized_text)
             title, _ = service.sanitize(preview.title)
-            if len(safe) > 20000:
+            if len(safe) > MAX_MEMORY_CHARS:
                 raise ValueError("intake.too_large")
             digest = content_hash(safe)
             existing = connection.scalar(
@@ -324,7 +325,7 @@ class ReviewWorkflow:
                 clean, _ = build_shared_memory(
                     self.engine, DatabasePermissions(connection)
                 ).memory.sanitize(value)
-                if len(clean) > 20000:
+                if len(clean) > MAX_MEMORY_CHARS:
                     raise ValueError("intake.too_large")
             if title is not None or sources is not None:
                 if candidate.target_memory_id is None:
@@ -435,6 +436,9 @@ class ReviewWorkflow:
             services = build_shared_memory(self.engine, DatabasePermissions(connection))
             approval = services.reviews.approve(actor, actor, request)
             memory = asyncio.run(services.memory._ingest(actor, request, approval, connection))
+            from shiros.memory_metadata import store_initial_canonical_title
+
+            store_initial_canonical_title(connection, memory, source["title"])
             connection.execute(
                 text(
                     "INSERT INTO review_source_links VALUES (:intake,:source) "

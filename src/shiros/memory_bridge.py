@@ -23,13 +23,29 @@ from shiros.memory_gateway import MemoryGateway
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILE_ROOT = ROOT / ".local" / "memory-clients"
-CLIENTS = ("codex", "chatgpt", "work", "deepseek", "opencode", "deepseek-harness", "antigravity")
+CLIENTS = (
+    "codex",
+    "chatgpt",
+    "work",
+    "deepseek",
+    "opencode",
+    "deepseek-harness",
+    "antigravity",
+    "gemini-desktop",
+)
 
 
 class ClientProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
     client: Literal[
-        "codex", "chatgpt", "work", "deepseek", "opencode", "deepseek-harness", "antigravity"
+        "codex",
+        "chatgpt",
+        "work",
+        "deepseek",
+        "opencode",
+        "deepseek-harness",
+        "antigravity",
+        "gemini-desktop",
     ]
     actor: UUID
     scope: UUID
@@ -119,10 +135,47 @@ def init_client(engine: Engine, identity: LocalIdentity, scope: UUID, client: st
     return profile
 
 
+def music_access(
+    engine: Engine, identity: LocalIdentity, profile: ClientProfile, *, enabled: bool
+) -> None:
+    """Owner-only, scoped capability; never promotes a client to owner/reviewer."""
+    with engine.begin() as connection:
+        lock_writes(connection)
+        owner = identity.current(connection)
+        DatabasePermissions(connection).require(owner, profile.scope, "admin")
+        principal = connection.scalar(
+            text("SELECT principal FROM local_identities WHERE id=:a"), {"a": profile.actor}
+        )
+        if principal != f"mcp:{profile.client}:{profile.actor}":
+            raise PermissionError("profile.invalid_identity")
+        if not DatabasePermissions(connection).has(profile.actor, profile.scope, "read"):
+            raise PermissionError("profile.revoked")
+        if enabled:
+            connection.execute(
+                text(
+                    "INSERT INTO client_capability_grants(actor_id,scope_id,capability,granted_by) "
+                    "VALUES (:a,:s,'music_write',:owner) ON CONFLICT DO NOTHING"
+                ),
+                {"a": profile.actor, "s": profile.scope, "owner": owner},
+            )
+        else:
+            connection.execute(
+                text(
+                    "DELETE FROM client_capability_grants WHERE actor_id=:a AND scope_id=:s "
+                    "AND capability='music_write'"
+                ),
+                {"a": profile.actor, "s": profile.scope},
+            )
+        audit(connection, owner, profile.scope, profile.actor, "grant" if enabled else "revoke")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="ShirOS shared memory bridge")
-    parser.add_argument("command", choices=("init", "serve", "status", "revoke", "query", "access"))
+    parser.add_argument(
+        "command", choices=("init", "serve", "status", "revoke", "query", "access", "music-access")
+    )
     parser.add_argument("--mode", choices=("reader", "proposer", "editor"))
+    parser.add_argument("--music", choices=("enabled", "disabled"))
     parser.add_argument("--client", choices=CLIENTS, required=True)
     parser.add_argument("--scope", type=UUID)
     parser.add_argument("--transport", choices=("stdio", "http"), default="stdio")
@@ -141,6 +194,12 @@ def main() -> None:
         )
         if profile.client != args.client or len(profile.token.get_secret_value()) != 43:
             raise ValueError("profile.invalid")
+        if args.command == "music-access":
+            if args.music is None:
+                raise ValueError("music_access.mode_required")
+            music_access(engine, identity, profile, enabled=args.music == "enabled")
+            print("Client music writing: " + args.music + ". Memory review privileges unchanged.")
+            return
         if args.command == "access":
             if args.mode is None:
                 raise ValueError("access.mode_required")
@@ -161,6 +220,13 @@ def main() -> None:
                     ),
                     {"a": profile.actor, "s": profile.scope, "r": args.mode},
                 )
+                if args.mode == "reader":
+                    connection.execute(
+                        text(
+                            "DELETE FROM client_capability_grants WHERE actor_id=:a AND scope_id=:s"
+                        ),
+                        {"a": profile.actor, "s": profile.scope},
+                    )
                 audit(connection, owner, profile.scope, profile.actor, "grant")
             print(
                 f"Client access: {args.mode}. New memories require approval; "

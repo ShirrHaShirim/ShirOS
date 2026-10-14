@@ -1,10 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "ShirOS GPT Sync",
-  "version": "0.5.0",
-  "description": "Opt-in snapshots of loaded ChatGPT messages to your local ShirOS-GPT download folder.",
-  "permissions": ["downloads", "activeTab"],
-  "action": {"default_title": "ShirOS：开启/停止此页同步"},
+  "name": "ShirOS Conversation Sync",
+  "version": "0.7.4.1",
+  "description": "Conversation-scoped capture with explicit permission, attachment links and automatic history scrolling.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["http://127.0.0.1/*", "https://chatgpt.com/*", "https://chat.deepseek.com/*"],
+  "icons": {"16":"icon.png","48":"icon.png","128":"icon.png"},
+  "action": {"default_title": "ShirOS 对话同步", "default_popup": "popup.html", "default_icon":"icon.png"},
   "background": {"service_worker": "background.js"},
-  "content_scripts": [{"matches": ["https://chatgpt.com/*"], "js": ["content.js"]}]
+  "content_scripts": [{"matches": ["https://chatgpt.com/*", "https://chat.deepseek.com/*"], "js": ["content.js"]}]
 }

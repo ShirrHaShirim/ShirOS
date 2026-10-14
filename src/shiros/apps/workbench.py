@@ -2,6 +2,7 @@
 
 import asyncio
 import secrets
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import quote
@@ -22,6 +23,7 @@ from shiros.domains.music import MusicRequest, MusicService
 from shiros.file_library import FileLibrary, FileRequest
 from shiros.identity import DatabasePermissions, LocalIdentity
 from shiros.markdown_export import memory_markdown
+from shiros.memory_limits import MAX_MEMORY_CHARS, MAX_MEMORY_REQUEST_BYTES
 from shiros.review_workflow import ReviewWorkflow
 from shiros.shared_memory import build_shared_memory
 from shiros.visibility import visible_memory
@@ -42,12 +44,16 @@ class BrowserGuard:
         origin = headers.get(b"origin", b"").decode("latin1")
         allowed = f"127.0.0.1:{self.port}"
         api = scope["path"].startswith("/ui-api/")
+        capture = scope["path"].startswith("/capture/")
+        extension_origin = capture and origin.startswith(
+            ("chrome-extension://", "moz-extension://")
+        )
         client = scope.get("client")
         denied = (
             host != allowed
             or (client is not None and client[0] not in ("127.0.0.1", "::1", "testclient"))
-            or (origin and origin != f"http://{allowed}")
-            or headers.get(b"sec-fetch-site") == b"cross-site"
+            or (origin and origin != f"http://{allowed}" and not extension_origin)
+            or (headers.get(b"sec-fetch-site") == b"cross-site" and not extension_origin)
             or (
                 api
                 and not secrets.compare_digest(
@@ -60,7 +66,7 @@ class BrowserGuard:
                 scope, receive, send
             )
             return
-        if api:
+        if api or capture:
             if scope["method"] != "POST" or not headers.get(b"content-type", b"").startswith(
                 b"application/json"
             ):
@@ -76,11 +82,16 @@ class BrowserGuard:
                 body.extend(message.get("body", b""))
                 limit = (
                     70_000_000
-                    if scope["path"]
-                    in {"/ui-api/files/upload", "/ui-api/files/conversation-import"}
+                    if capture
+                    or scope["path"]
+                    in {
+                        "/ui-api/files/upload",
+                        "/ui-api/files/conversation-import",
+                        "/ui-api/conversations/import",
+                    }
                     else 12000000
                     if scope["path"] == "/ui-api/music/image-upload"
-                    else 400000
+                    else MAX_MEMORY_REQUEST_BYTES
                 )
                 if len(body) > limit:
                     await JSONResponse({"error": "intake.too_large"}, status_code=413)(
@@ -119,7 +130,7 @@ class BrowserInput(BaseModel):
     id: UUID | None = None
     title: str = Field(default="note.txt", max_length=250)
     sources: list[dict[str, Any]] | None = Field(default=None, max_length=30)
-    text: str = Field(default="", max_length=65536)
+    text: str = Field(default="", max_length=MAX_MEMORY_CHARS)
     query: str = Field(default="", max_length=1000)
     mode: Literal["keyword", "semantic", "hybrid", "structured"] = "keyword"
     kind: Literal["text", "markdown", "json", "csv", "intake_source", "memory"] = "text"
@@ -142,8 +153,25 @@ def create_workbench(
     token: str | None = None,
     music_enabled: bool = True,
 ) -> FastAPI:
+    from shiros.capture import CaptureInput, CaptureService, CaptureSnapshot
+    from shiros.capture_worker import CaptureWorker
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        worker = CaptureWorker(engine, scope_id)
+        worker.start()
+        try:
+            yield
+        finally:
+            worker.close()
+
     app = FastAPI(
-        title="ShirOS Workbench", version="0.5.0", docs_url=None, redoc_url=None, openapi_url=None
+        title="ShirOS Workbench",
+        version="0.7.18",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+        lifespan=lifespan,
     )
     token = token or secrets.token_urlsafe(32)
     workflow = ReviewWorkflow(engine, identity, Path(".local/inbox"))
@@ -167,7 +195,122 @@ def create_workbench(
 
     @app.get("/workbench-health")
     def health() -> dict[str, str]:
-        return {"service": "ShirOS Workbench", "stage": "local-workbench", "version": "0.5.0"}
+        return {"service": "ShirOS Workbench", "stage": "local-workbench", "version": "0.7.18"}
+
+    @app.post("/ui-api/capture/{action}")
+    def capture_manage(action: str, value: CaptureInput) -> JSONResponse:
+        try:
+            with engine.connect() as c:
+                actor = workflow._actor(c, scope_id, "read")
+            return JSONResponse(
+                jsonable_encoder(CaptureService(engine, actor, scope_id).manage(action, value))
+            )
+        except PermissionError as error:
+            return JSONResponse({"error": str(error)}, status_code=403)
+        except ValueError as error:
+            return JSONResponse({"error": str(error)}, status_code=400)
+
+    @app.post("/capture/{grant_id}/authorize")
+    def capture_authorize(grant_id: UUID, value: CaptureInput, request: Request) -> JSONResponse:
+        try:
+            secret = request.headers.get("X-Capture-Token", "")
+            if not secret:
+                raise PermissionError("capture.not_authorized")
+            with engine.begin() as c:
+                grant = CaptureService.authorize(c, grant_id, secret)
+                if grant["scope_id"] != scope_id:
+                    raise PermissionError("capture.not_authorized")
+            return JSONResponse(
+                {
+                    "provider": grant["provider"],
+                    "conversation_id": grant["conversation_id"],
+                    "all_conversations": grant["is_bulk"],
+                    "include_files": grant["include_files"],
+                }
+            )
+        except PermissionError as error:
+            return JSONResponse({"error": str(error)}, status_code=403)
+        except Exception:
+            return JSONResponse({"error": "capture.storage_unavailable"}, status_code=503)
+
+    @app.post("/capture/{grant_id}")
+    def capture_receive(grant_id: UUID, value: CaptureSnapshot, request: Request) -> JSONResponse:
+        try:
+            secret = request.headers.get("X-Capture-Token", "")
+            if not secret:
+                raise PermissionError("capture.not_authorized")
+            with engine.connect() as c:
+                grant = (
+                    c.execute(
+                        text(
+                            "SELECT actor_id,scope_id FROM capture_grants WHERE id=:id "
+                            "AND scope_id=:scope"
+                        ),
+                        {"id": grant_id, "scope": scope_id},
+                    )
+                    .mappings()
+                    .first()
+                )
+            if grant is None:
+                raise PermissionError("capture.not_authorized")
+            service = CaptureService(engine, grant["actor_id"], scope_id)
+            return JSONResponse(jsonable_encoder(service.ingest(grant_id, value, secret)))
+        except PermissionError as error:
+            return JSONResponse({"error": str(error)}, status_code=403)
+        except ValueError as error:
+            return JSONResponse({"error": str(error)}, status_code=400)
+        except Exception as error:
+            # Never echo database statements, payloads or the default HTML/text 500 response.
+            code = getattr(getattr(error, "orig", None), "sqlstate", None)
+            return JSONResponse(
+                {
+                    "error": "capture.schema_not_ready"
+                    if code in {"42703", "42P01"}
+                    else "capture.storage_unavailable"
+                },
+                status_code=503,
+            )
+
+    from shiros.knowledge import KnowledgeRequest, KnowledgeService
+    from shiros.preferences import ThemeRequest, preference
+
+    @app.post("/ui-api/preferences/theme")
+    def theme_preference(value: ThemeRequest) -> JSONResponse:
+        try:
+            with engine.connect() as c:
+                actor = workflow._actor(c, scope_id, "read")
+            return JSONResponse(preference(engine, actor, scope_id, value))
+        except PermissionError:
+            return JSONResponse({"error": "permission.denied"}, status_code=403)
+
+    @app.post("/ui-api/knowledge/{action}")
+    def knowledge_action(action: str, value: KnowledgeRequest) -> JSONResponse:
+        from fastapi.encoders import jsonable_encoder
+
+        try:
+            with engine.connect() as c:
+                actor = workflow._actor(c, scope_id, "read")
+            result = KnowledgeService(engine, actor, scope_id).run(
+                action, value, trusted_review=True
+            )
+            return JSONResponse(jsonable_encoder(result))
+        except PermissionError as error:
+            return JSONResponse({"error": str(error)}, status_code=403)
+        except ValueError as error:
+            return JSONResponse({"error": str(error)}, status_code=400)
+
+    @app.post("/ui-api/conversations/import")
+    def conversation_import(value: FileRequest) -> JSONResponse:
+        from shiros.capture_export import import_export
+
+        try:
+            with engine.connect() as c:
+                actor = workflow._actor(c, scope_id, "admin")
+            return JSONResponse(jsonable_encoder(import_export(engine, actor, scope_id, value)))
+        except PermissionError as error:
+            return JSONResponse({"error": str(error)}, status_code=403)
+        except ValueError as error:
+            return JSONResponse({"error": str(error)}, status_code=400)
 
     @app.post("/ui-api/files/{action}")
     def files_action(action: str, value: FileRequest) -> Response:
@@ -249,6 +392,7 @@ def create_workbench(
                 "tags",
                 "tag-create",
                 "tag-update",
+                "tag-delete",
                 "memory-tags",
                 "set-memory-tags",
                 "library",
@@ -276,6 +420,8 @@ def create_workbench(
                         result = tags.update_tag(
                             engine, actor, scope_id, value.id, value.name, value.parent_id
                         )
+                    elif action == "tag-delete":
+                        result = tags.delete_tag(engine, actor, scope_id, value.id)
                     elif action == "memory-tags":
                         result = {"items": tags.memory_tags(engine, actor, scope_id, value.id)}
                     else:
@@ -325,6 +471,9 @@ def create_workbench(
                                 {
                                     **hit.memory.model_dump(mode="json"),
                                     **details(connection, hit.memory),
+                                    "text": hit.memory.text[:2000],
+                                    "text_length": len(hit.memory.text),
+                                    "truncated": len(hit.memory.text) > 2000,
                                 }
                                 for hit in hits
                             ]
@@ -336,8 +485,8 @@ def create_workbench(
                         row.id: row
                         for row in connection.execute(
                             text(
-                                "SELECT id,title,kind FROM review_sources WHERE scope_id=:scope "
-                                "AND id=ANY(CAST(:ids AS uuid[]))"
+                                "SELECT id,title,kind FROM review_sources WHERE "
+                                "scope_id=:scope AND id=ANY(CAST(:ids AS uuid[]))"
                             ),
                             {"scope": scope_id, "ids": [item.source_id for item in candidates]},
                         )
@@ -346,6 +495,10 @@ def create_workbench(
                     "items": [
                         {
                             **item.model_dump(mode="json"),
+                            "text": item.text[:2000],
+                            "original_text": item.original_text[:2000],
+                            "text_length": len(item.text),
+                            "truncated": len(item.text) > 2000,
                             "title": item.proposed_title or sources[item.source_id].title,
                             "kind": sources[item.source_id].kind,
                         }

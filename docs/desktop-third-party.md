@@ -13,4 +13,4 @@ PostgreSQL 和 pgvector 使用随构建输入提供的 conda-forge Windows x64 �
 - PyInstaller：https://pyinstaller.org/
 - Inno Setup：https://jrsoftware.org/
 
-构建者应随实际依赖版本检查许可证及再分发条件；安装包不包含数据库集群、用户文件、登录令牌或私人记忆。
+构建者应随实际依赖版本检查许可证及再分发条件；安装包不包含数据库集群、用户文件、登录令牌或私人记忆。UI 测试版另附经作者明确授权的曲库快照（条目、图片、关联及评价），仅用于朋友测试；音乐图片的来源与署名记录保留在曲库内。

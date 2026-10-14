@@ -12,8 +12,9 @@ from uuid import UUID
 
 from shiros.core.privacy import PrivacyDecision, PrivacyInput, RuleBasedPrivacyPolicy
 from shiros.core.schemas import EvidenceLevel, Record, UtcTimestamp, utc_now
+from shiros.memory_limits import MAX_MEMORY_BYTES, MAX_MEMORY_CHARS
 
-MAX_BYTES = 65536
+MAX_BYTES = MAX_MEMORY_BYTES
 KINDS = {".txt": "text", ".md": "markdown", ".json": "json", ".csv": "csv"}
 
 
@@ -115,6 +116,8 @@ def preview_content(
         raise ValueError("intake.invalid_content") from None
     if not normalized:
         raise ValueError("intake.empty")
+    if len(normalized) > MAX_MEMORY_CHARS:
+        raise ValueError("intake.too_large")
     policy = RuleBasedPrivacyPolicy()
     decisions = [
         policy.evaluate(PrivacyInput(text=value, reviewed=True))

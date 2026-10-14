@@ -1,17 +1,20 @@
 #ifndef Edition
   #error Edition required
 #endif
+#ifndef AppVersion
+  #error AppVersion required
+#endif
 [Setup]
 AppId=ShirOS-Desktop-{#Edition}
 AppName=ShirOS {#Edition}
-AppVersion=0.5.0
+AppVersion={#AppVersion}
 DefaultDirName={localappdata}\Programs\ShirOS-{#Edition}
 DefaultGroupName=ShirOS {#Edition}
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir={#Output}
-OutputBaseFilename=ShirOS-0.5.0-{#Edition}-Setup
+OutputBaseFilename=ShirOS-{#AppVersion}-{#Edition}-Setup
 Compression=lzma2/fast
 SolidCompression=yes
 WizardStyle=modern

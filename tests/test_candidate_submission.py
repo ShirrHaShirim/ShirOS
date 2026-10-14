@@ -134,7 +134,12 @@ def test_submission_atomicity_and_limits(
 ) -> None:
     scope, request = uuid4(), uuid4()
     proposer = actor(db_engine, scope, "proposer")
-    for title, value in [("", "note"), ("title", " "), ("x" * 251, "note"), ("title", "x" * 20001)]:
+    for title, value in [
+        ("", "note"),
+        ("title", " "),
+        ("x" * 251, "note"),
+        ("title", "x" * 10_000_001),
+    ]:
         with pytest.raises(ValueError, match="invalid_input"):
             submit(db_engine, proposer, scope, title, value, request)
 

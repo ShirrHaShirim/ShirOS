@@ -1,0 +1,11 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ShirOS 对话同步</title><link rel="stylesheet" href="popup.css"><script src="popup.js" defer></script></head><body>
+<header class="brand"><img src="icon.png" width="32" height="32" alt=""><div><h1>ShirOS 对话同步</h1><span>网页对话归档</span></div><small>0.7.4.1</small></header>
+<p id="current" class="current">读取当前页面…</p>
+<p id="memory-title" class="hint" aria-label="记忆标题"></p>
+<section class="card bulk-card"><div class="section-heading"><h2>批量导入</h2><span class="caption">当前网站</span></div><p class="hint">从首页读取可加载的历史与项目目录。同一对话会更新原记忆。</p><div class="actions"><button id="all" disabled class="primary">批量导入对话</button><button id="all-stop" disabled>停止批量</button></div><progress id="bulk-progress" max="1" value="0" hidden aria-label="批量导入进度"></progress><p id="bulk-status" class="status" role="status" aria-live="polite" hidden></p></section>
+<section id="single-sync" class="card"><div class="section-heading"><h2>当前对话</h2><span class="caption">持续更新</span></div><label class="check"><input id="auto-scroll" type="checkbox" checked><span>自动加载完整历史</span></label><div class="actions"><button id="start" disabled class="primary">开始同步当前对话</button><button id="stop" disabled>停止</button></div><button id="scroll" disabled class="text-button">重新从顶部读取</button></section>
+<section class="state-panel" aria-label="采集状态"><div id="role-counts" class="metrics" hidden><div><strong id="user-count">0</strong><span>提问</span></div><div><strong id="assistant-count">0</strong><span>回答</span></div></div><p id="status" class="status" role="status" aria-live="polite"></p></section>
+<details class="card connection"><summary>连接 ShirOS</summary><label for="pairing">粘贴设置页生成的配对信息</label><textarea id="pairing" rows="4" spellcheck="false" placeholder="配对信息仅保存在本机扩展中"></textarea><button id="save" class="primary">保存配对</button><p class="hint">已有授权可在 ShirOS 设置中重新生成配对。</p></details>
+<details class="card diagnostic"><summary>识别诊断</summary><p class="hint">版本、结构、角色计数与滚动位置，不含对话正文。</p><button id="copy-diagnostics">复制识别诊断</button><pre id="diagnostics"></pre></details>
+<footer>完整账号记录可在 ShirOS 文件库导入官方导出包。</footer>
+</body></html>

@@ -29,6 +29,27 @@ class ReaderPermissions:
 
 
 class MemoryGateway:
+    async def knowledge(
+        self, action: str, payload: dict[str, Any], *, mutate: bool = False
+    ) -> dict[str, Any]:
+        from shiros.knowledge import (
+            MCP_WRITE_ACTIONS,
+            READ_ACTIONS,
+            KnowledgeRequest,
+            KnowledgeService,
+        )
+
+        if action not in (MCP_WRITE_ACTIONS if mutate else READ_ACTIONS):
+            raise PermissionError("knowledge.human_review_required")
+        result = await asyncio.to_thread(
+            KnowledgeService(self.engine, self.actor, self.scope).run,
+            action,
+            KnowledgeRequest.model_validate(payload),
+        )
+        from fastapi.encoders import jsonable_encoder
+
+        return {**jsonable_encoder(result), "content_is_untrusted_data": True}
+
     async def music_query(self, action: str, payload: dict[str, Any]) -> dict[str, Any]:
         from shiros.domains.music import READ_ACTIONS, MusicRequest, MusicService
 
@@ -47,16 +68,25 @@ class MemoryGateway:
 
         if action not in {
             "save",
+            "release-metadata",
             "import-preview",
             "import",
             "review",
             "membership",
             "listen",
             "source",
+            "review-history-add",
+            "review-import",
+            "review-delete",
             "taxonomy-save",
+            "taxonomy-delete",
             "taxonomy-seed",
             "image-upload",
             "image-remove",
+            "track-save",
+            "track-promote",
+            "image-frame",
+            "recording-consolidate",
         }:
             raise ValueError("music.invalid_action")
         service = MusicService(self.engine, self.actor, self.scope)
@@ -84,12 +114,22 @@ class MemoryGateway:
         can_manage_tags = self.can("tag_manage")
         return {
             "service": "ShirOS",
-            "version": "0.5.0",
+            "version": "0.7.18",
             "music_read": True,
             "music_write": self.can("music_write"),
+            "knowledge_layers": ["L0", "L1", "L2"],
+            "l1_maintenance": self.can_propose() or self.can("review"),
+            "l0_publish_via_mcp": False,
             "client": self.client,
             "scope_id": str(self.scope),
-            "read_only": not (can_propose or can_tag or can_edit or can_delete or can_manage_tags),
+            "read_only": not (
+                can_propose
+                or can_tag
+                or can_edit
+                or can_delete
+                or can_manage_tags
+                or self.can("music_write")
+            ),
             "candidate_submission": can_propose,
             "tag_creation": can_tag,
             "tag_assignment": can_tag,

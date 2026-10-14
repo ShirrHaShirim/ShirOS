@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = {
     "music_query",
     "music_mutate",
+    "knowledge_query",
+    "knowledge_maintain",
     "search",
     "fetch",
     "context",
@@ -33,6 +35,7 @@ TOOLS = {
     "migrate_memory_sources",
 }
 READ_ONLY = {
+    "knowledge_query",
     "music_query",
     "search",
     "fetch",
@@ -44,6 +47,7 @@ READ_ONLY = {
     "get_memory_sources",
 }
 DESTRUCTIVE = {
+    "music_mutate",
     "edit_memory",
     "delete_memory",
     "delete_tag",
@@ -74,6 +78,7 @@ async def main() -> None:
                 assert tool.annotations.destructive_hint == (tool.name in DESTRUCTIVE)
             for name, tool_arguments in (
                 ("status", {}),
+                ("knowledge_query", {"action": "domains", "payload": {}}),
                 ("music_query", {"action": "list", "payload": {"limit": 2}}),
                 ("list_tags", {}),
                 ("list_memories", {"limit": 2}),
@@ -89,7 +94,7 @@ async def main() -> None:
                     payload = json.loads(block.text)
                 assert "error" not in payload, name
                 if name == "status":
-                    assert payload["version"] == "0.4.1"
+                    assert payload["version"] == "0.7.14"
     print("MCP initialize, tools/list, status, list_tags, search and bounded context passed.")
 
 

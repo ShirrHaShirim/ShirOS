@@ -52,7 +52,7 @@ class PrivacyPolicy(Protocol):
     def evaluate(self, value: PrivacyInput) -> PrivacyDecision: ...
 
 
-EMAIL = re.compile(r"[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}")
+EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}")
 # ISO dates (2026-10-06) are not phone numbers; keep them intact for provenance.
 PHONE = re.compile(r"(?<!\w)(?!\d{4}-\d{2}-\d{2})(?:\+?\d[\d ()-]{6,}\d)(?!\w)")
 SECRET = re.compile(
@@ -65,7 +65,9 @@ CONFIDENTIAL = re.compile(
     r"保密|不要外传|不要记录|私下说|暂时不能公开|密码|验证码|"
     r"(?i:confidential|off the record|do not (?:save|record|share)|private secret)"
 )
-AMOUNT = re.compile(r"(?:[$¥€]|RMB\s*|USD\s*)\d[\d,]*(?:\.\d+)?|\d[\d,]*(?:\.\d+)?\s*元")
+AMOUNT = re.compile(
+    r"(?:[$¥€]|RMB\s*|USD\s*)\d[\d,]*(?:\.\d+)?|(?<![\d,])\d[\d,]*(?:\.\d+)?\s*元"
+)
 
 
 class RuleBasedPrivacyPolicy:

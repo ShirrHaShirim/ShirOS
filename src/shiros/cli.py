@@ -73,6 +73,11 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--locale", choices=[locale.value for locale in Locale], default="zh-CN")
     parser.add_argument("--scope")
+    parser.add_argument(
+        "--reuse-session",
+        action="store_true",
+        help="Reuse the owner browser session when reloading the workbench",
+    )
     args = parser.parse_args()
     checks = {
         "test": ["pytest", "-m", "not integration"],
@@ -104,7 +109,7 @@ def main() -> None:
             scope = UUID(args.scope) if args.scope else identity.bootstrap()
             if not 1024 <= args.port <= 65535:
                 raise ValueError("port.invalid")
-            token = start_session(args.port)
+            token = start_session(args.port, reuse=args.reuse_session)
             app = create_workbench(engine, identity, scope, args.port, token)
             uvicorn.run(app, host="127.0.0.1", port=args.port, access_log=False)
         finally:
